@@ -13,7 +13,7 @@ defmodule PearlWeb.HomeLive do
        repos: repos,
        repo_url: "",
        generating: false,
-       progress: nil,
+       progress_by_repo: %{},
        error: nil,
        confirm_delete_id: nil
      )}
@@ -66,13 +66,6 @@ defmodule PearlWeb.HomeLive do
                 </div>
               <% end %>
 
-              <%= if @progress do %>
-                <div role="alert" class="alert alert-warning">
-                  <span class="loading loading-spinner"></span>
-                  <span>{@progress}</span>
-                </div>
-              <% end %>
-
               <button type="submit" disabled={@generating} class="btn btn-primary w-full">
                 {if @generating, do: "Generating...", else: "Generate Wiki"}
               </button>
@@ -118,7 +111,10 @@ defmodule PearlWeb.HomeLive do
                               phx-click="request_delete"
                               phx-value-id={repo.id}
                               class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
-                              disabled={repo.status in ["cloning", "analyzing", "generating"]}
+                              disabled={
+                                repo.status in ["cloning", "analyzing", "generating", "pending"] or
+                                  Map.has_key?(@progress_by_repo, repo.id)
+                              }
                             >
                               <.icon name="hero-trash" class="size-4" />
                             </button>
@@ -126,8 +122,15 @@ defmodule PearlWeb.HomeLive do
                         </div>
                       </div>
 
-                      <%= if repo.description do %>
-                        <p class="text-sm opacity-70 mt-2 line-clamp-2">{repo.description}</p>
+                      <%= if progress = @progress_by_repo[repo.id] do %>
+                        <div class="flex items-center gap-2 mt-2 text-sm text-warning">
+                          <span class="loading loading-spinner loading-sm"></span>
+                          <span>{progress}</span>
+                        </div>
+                      <% else %>
+                        <%= if repo.description do %>
+                          <p class="text-sm opacity-70 mt-2 line-clamp-2">{repo.description}</p>
+                        <% end %>
                       <% end %>
 
                       <div class="flex flex-wrap items-center gap-3 mt-3">
@@ -175,19 +178,50 @@ defmodule PearlWeb.HomeLive do
 
   @impl true
   def handle_event("generate", %{"repo_url" => url}, socket) do
-    socket =
-      socket
-      |> assign(generating: true, progress: "Starting...", error: nil, repo_url: url)
+    alias Pearl.Repositories.Git
 
-    # Start async generation
-    pid = self()
+    case Git.parse_url(url) do
+      {:ok, parsed} ->
+        case find_or_create_pending_repo(url, parsed) do
+          {:ok, repo} ->
+            repos = prepend_or_update_repo(socket.assigns.repos, repo)
+            progress_by_repo = Map.put(socket.assigns.progress_by_repo, repo.id, "Starting...")
 
-    Task.start(fn ->
-      result = do_generate(url, fn msg -> send(pid, {:progress, msg}) end)
-      send(pid, {:generation_complete, result})
-    end)
+            socket =
+              assign(socket,
+                repos: repos,
+                generating: true,
+                progress_by_repo: progress_by_repo,
+                error: nil,
+                repo_url: ""
+              )
 
-    {:noreply, socket}
+            pid = self()
+            repo_id = repo.id
+
+            # Fetch metadata in parallel (for instant card display with full info)
+            Task.start(fn ->
+              case Repositories.fetch_and_save_metadata(repo) do
+                {:ok, updated_repo} -> send(pid, {:metadata_updated, repo_id, updated_repo})
+                _ -> :ok
+              end
+            end)
+
+            # Main generation task
+            Task.start(fn ->
+              result = do_generate(repo, fn msg -> send(pid, {:progress, repo_id, msg}) end)
+              send(pid, {:generation_complete, repo_id, result})
+            end)
+
+            {:noreply, socket}
+
+          {:error, reason} ->
+            {:noreply, assign(socket, error: format_error(reason))}
+        end
+
+      {:error, reason} ->
+        {:noreply, assign(socket, error: format_error(reason))}
+    end
   end
 
   def handle_event("request_delete", %{"id" => id}, socket) do
@@ -227,42 +261,54 @@ defmodule PearlWeb.HomeLive do
   end
 
   @impl true
-  def handle_info({:progress, message}, socket) do
-    {:noreply, assign(socket, progress: message)}
+  def handle_info({:progress, repo_id, message}, socket) do
+    progress_by_repo = Map.put(socket.assigns.progress_by_repo, repo_id, message)
+    {:noreply, assign(socket, progress_by_repo: progress_by_repo)}
   end
 
   @impl true
-  def handle_info({:generation_complete, {:ok, repo}}, socket) do
+  def handle_info({:metadata_updated, repo_id, updated_repo}, socket) do
+    repos = update_repo_in_list(socket.assigns.repos, repo_id, fn _old -> updated_repo end)
+    {:noreply, assign(socket, repos: repos)}
+  end
+
+  @impl true
+  def handle_info({:generation_complete, repo_id, {:ok, repo}}, socket) do
+    repos =
+      update_repo_in_list(socket.assigns.repos, repo_id, fn _ ->
+        %{repo | status: "ready"}
+      end)
+
     {:noreply,
      socket
-     |> assign(generating: false, progress: nil)
+     |> assign(
+       generating: false,
+       repos: repos,
+       progress_by_repo: Map.delete(socket.assigns.progress_by_repo, repo_id)
+     )
      |> push_navigate(to: ~p"/wiki/#{repo.id}")}
   end
 
   @impl true
-  def handle_info({:generation_complete, {:error, reason}}, socket) do
-    error_message =
-      case reason do
-        {:clone_failed, msg} -> "Clone failed: #{msg}"
-        {:indexing_failed, msg} -> "Indexing failed: #{inspect(msg)}"
-        {:generation_failed, msg} -> "Wiki generation failed: #{inspect(msg)}"
-        :no_api_key -> "API key not configured for selected provider"
-        msg when is_binary(msg) -> msg
-        msg -> "Error: #{inspect(msg)}"
-      end
+  def handle_info({:generation_complete, repo_id, {:error, reason}}, socket) do
+    repos =
+      update_repo_in_list(socket.assigns.repos, repo_id, fn repo ->
+        %{repo | status: "failed"}
+      end)
 
     {:noreply,
      assign(socket,
        generating: false,
-       progress: nil,
-       error: error_message
+       repos: repos,
+       progress_by_repo: Map.delete(socket.assigns.progress_by_repo, repo_id),
+       error: format_error(reason)
      )}
   end
 
-  defp do_generate(url, on_progress) do
-    on_progress.("Validating repository URL...")
+  defp do_generate(%Pearl.Repositories.RepoRecord{} = repo, on_progress) do
+    on_progress.("Cloning repository...")
 
-    case Repositories.clone(url) do
+    case Repositories.clone_existing(repo) do
       {:ok, repo} ->
         on_progress.("Repository cloned. Indexing for RAG...")
 
@@ -289,24 +335,54 @@ defmodule PearlWeb.HomeLive do
       {:error, {:clone_failed, output}} ->
         {:error, {:clone_failed, "Git clone failed: #{String.slice(output, 0, 200)}"}}
 
-      {:error, :invalid_url} ->
-        {:error, "Invalid repository URL format"}
-
-      {:error, :unsupported_provider} ->
-        {:error, "Only GitHub, GitLab, and Bitbucket URLs are supported"}
-
       {:error, reason} ->
         {:error, reason}
     end
   end
 
+  defp find_or_create_pending_repo(url, parsed) do
+    case Repositories.get_repo_by_url(url) do
+      nil ->
+        Repositories.create_repo(Map.merge(parsed, %{url: url, status: "pending"}))
+
+      existing ->
+        Repositories.update_status(existing, "pending")
+    end
+  end
+
+  defp prepend_or_update_repo(repos, repo) do
+    case Enum.find_index(repos, &(&1.id == repo.id)) do
+      nil -> [repo | repos]
+      idx -> List.replace_at(repos, idx, repo)
+    end
+  end
+
+  defp update_repo_in_list(repos, repo_id, update_fn) do
+    Enum.map(repos, fn repo ->
+      if repo.id == repo_id, do: update_fn.(repo), else: repo
+    end)
+  end
+
+  defp format_error({:clone_failed, msg}), do: "Clone failed: #{msg}"
+  defp format_error({:indexing_failed, msg}), do: "Indexing failed: #{inspect(msg)}"
+  defp format_error({:generation_failed, msg}), do: "Wiki generation failed: #{inspect(msg)}"
+  defp format_error(:invalid_url), do: "Invalid repository URL format"
+
+  defp format_error(:unsupported_provider),
+    do: "Only GitHub, GitLab, and Bitbucket URLs are supported"
+
+  defp format_error(msg) when is_binary(msg), do: msg
+  defp format_error(msg), do: "Error: #{inspect(msg)}"
+
   defp status_badge("ready"), do: "badge-success"
+  defp status_badge("pending"), do: "badge-warning"
   defp status_badge("cloning"), do: "badge-warning"
   defp status_badge("analyzing"), do: "badge-warning"
   defp status_badge("generating"), do: "badge-info"
   defp status_badge("failed"), do: "badge-error"
   defp status_badge(_), do: "badge-neutral"
 
+  defp status_button_text("pending"), do: "Starting..."
   defp status_button_text("generating"), do: "Generating..."
   defp status_button_text("cloning"), do: "Cloning..."
   defp status_button_text("analyzing"), do: "Analyzing..."

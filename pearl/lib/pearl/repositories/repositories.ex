@@ -89,6 +89,54 @@ defmodule Pearl.Repositories do
     end
   end
 
+  @doc """
+  Clones a repository when the repo record already exists.
+  Does NOT fetch metadata since it's done in parallel for faster card display.
+  """
+  @spec clone_existing(RepoRecord.t(), keyword()) :: {:ok, RepoRecord.t()} | {:error, term()}
+  def clone_existing(%RepoRecord{} = repo, opts \\ []) do
+    with {:ok, repo} <- update_status(repo, "cloning"),
+         target_path <- repo_path(repo),
+         :ok <- ensure_parent_dir(target_path),
+         :ok <- maybe_remove_existing(target_path),
+         {:ok, _} <- Git.clone(repo.url, target_path, opts),
+         {:ok, files} <- Git.list_files(target_path),
+         attrs <- %{
+           local_path: target_path,
+           file_count: length(files),
+           status: "ready"
+         },
+         {:ok, repo} <- update_repo(repo, attrs) do
+      {:ok, repo}
+    end
+  end
+
+  defp maybe_remove_existing(path) do
+    if File.exists?(path) do
+      case File.rm_rf(path) do
+        {:ok, _} -> :ok
+        {:error, reason, _} -> {:error, {:cleanup_failed, reason}}
+      end
+    else
+      :ok
+    end
+  end
+
+  @doc """
+  Fetches metadata from GitHub/GitLab API and saves to DB.
+  Used for async metadata fetching for faster card display.
+  """
+  @spec fetch_and_save_metadata(RepoRecord.t()) :: {:ok, RepoRecord.t()} | {:error, term()}
+  def fetch_and_save_metadata(%RepoRecord{} = repo) do
+    metadata = fetch_metadata(repo)
+
+    if map_size(metadata) > 0 do
+      update_repo(repo, metadata)
+    else
+      {:ok, repo}
+    end
+  end
+
   defp fetch_metadata(%RepoRecord{provider: "github", owner: owner, name: name}) do
     url = "https://api.github.com/repos/#{owner}/#{name}"
     headers = [{"Accept", "application/vnd.github.v3+json"}, {"User-Agent", "Pearl-Wiki"}]
