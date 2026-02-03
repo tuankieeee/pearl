@@ -1,0 +1,24 @@
+/* Tailwind CSS v4 */
+@import "tailwindcss" source(none);
+@source "../css";
+@source "../js";
+@source "../../lib/pearl_web";
+
+/* Heroicons */
+@plugin "../vendor/heroicons";
+
+/* Typography for prose/markdown */
+@plugin "@tailwindcss/typography";
+
+/* daisyUI with retro (light) and synthwave (dark) themes */
+@plugin "daisyui" {
+  themes: retro --default, synthwave --prefersdark;
+}
+
+/* LiveView loading states */
+@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
+@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
+@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
+
+/* LiveView wrapper transparency */
+[data-phx-session], [data-phx-teleported-src] { display: contents }

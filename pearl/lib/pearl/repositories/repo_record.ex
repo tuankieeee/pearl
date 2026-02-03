@@ -1,0 +1,36 @@
+defmodule Pearl.Repositories.RepoRecord do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  alias Pearl.Wiki.WikiCache
+  alias Pearl.Rag.Embedding
+
+  schema "repos" do
+    field :url, :string
+    field :provider, :string
+    field :owner, :string
+    field :name, :string
+    field :branch, :string, default: "main"
+    field :local_path, :string
+    field :status, :string, default: "pending"
+    field :file_count, :integer
+    field :embedding_model, :string
+
+    has_many :wiki_caches, WikiCache, foreign_key: :repo_id
+    has_many :embeddings, Embedding, foreign_key: :repo_id
+
+    timestamps()
+  end
+
+  @required_fields [:url, :provider, :owner, :name]
+  @optional_fields [:branch, :local_path, :status, :file_count, :embedding_model]
+
+  def changeset(repo_record, attrs) do
+    repo_record
+    |> cast(attrs, @required_fields ++ @optional_fields)
+    |> validate_required(@required_fields)
+    |> validate_inclusion(:provider, ["github", "gitlab", "bitbucket"])
+    |> validate_inclusion(:status, ["pending", "cloning", "analyzing", "ready", "failed"])
+    |> unique_constraint([:provider, :owner, :name, :branch])
+  end
+end

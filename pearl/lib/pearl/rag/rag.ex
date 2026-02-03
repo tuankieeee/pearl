@@ -1,0 +1,158 @@
+defmodule Pearl.Rag do
+  @moduledoc """
+  The Rag context handles embeddings and retrieval-augmented generation.
+  """
+
+  import Ecto.Query
+  alias Pearl.Config
+  alias Pearl.Repo
+  alias Pearl.Rag.{Chunker, Embedding}
+  alias Pearl.Repositories
+  alias Pearl.Repositories.RepoRecord
+  alias Pearl.Providers
+
+  # Max characters for history (leaves room for system prompt + RAG context + current question)
+  @max_history_chars 8_000
+
+  @spec create_embedding(map()) :: {:ok, Embedding.t()} | {:error, Ecto.Changeset.t()}
+  def create_embedding(attrs) do
+    %Embedding{}
+    |> Embedding.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @spec delete_embeddings_for_repo(integer()) :: {non_neg_integer(), nil}
+  def delete_embeddings_for_repo(repo_id) do
+    Embedding
+    |> where([e], e.repo_id == ^repo_id)
+    |> Repo.delete_all()
+  end
+
+  @spec index_repo(RepoRecord.t()) :: {:ok, non_neg_integer()} | {:error, term()}
+  def index_repo(%RepoRecord{} = repo) do
+    with {:ok, structure} <- Repositories.get_structure(repo) do
+      files = flatten_structure(structure, "")
+
+      # Delete existing embeddings first
+      delete_embeddings_for_repo(repo.id)
+
+      # Process files in batches
+      count =
+        files
+        |> Enum.flat_map(fn file_path ->
+          case Repositories.read_file(repo, file_path) do
+            {:ok, content} -> Chunker.chunk_file(file_path, content)
+            _ -> []
+          end
+        end)
+        |> Enum.chunk_every(20)
+        |> Enum.reduce(0, fn batch, acc ->
+          case embed_and_store_batch(repo.id, batch) do
+            {:ok, n} -> acc + n
+            _ -> acc
+          end
+        end)
+
+      # Save the embedding model used for this repo
+      Repositories.update_repo(repo, %{embedding_model: Config.embedding_model()})
+
+      {:ok, count}
+    end
+  end
+
+  defp flatten_structure(structure, prefix) do
+    Enum.flat_map(structure, fn
+      {name, :file} ->
+        [Path.join(prefix, name)]
+
+      {name, children} when is_map(children) ->
+        flatten_structure(children, Path.join(prefix, name))
+    end)
+  end
+
+  defp embed_and_store_batch(repo_id, chunks) do
+    texts = Enum.map(chunks, & &1.content)
+
+    case Providers.embed(Config.provider(), texts) do
+      {:ok, vectors} ->
+        entries =
+          Enum.zip(chunks, vectors)
+          |> Enum.map(fn {chunk, vector} ->
+            %{
+              repo_id: repo_id,
+              file_path: chunk.file_path,
+              chunk_index: chunk.index,
+              content: chunk.content,
+              embedding: vector,
+              token_count: chunk.token_count,
+              inserted_at: NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+            }
+          end)
+
+        {count, _} = Repo.insert_all(Embedding, entries)
+        {:ok, count}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @spec search(integer(), [float()], integer()) :: [Embedding.t()]
+  def search(repo_id, query_vector, limit \\ 5) do
+    Embedding
+    |> where([e], e.repo_id == ^repo_id)
+    |> order_by([e], fragment("embedding <=> ?", ^query_vector))
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
+  @spec ask(RepoRecord.t(), String.t(), keyword()) ::
+          {:ok, String.t() | Enumerable.t()} | {:error, term()}
+  def ask(%RepoRecord{} = repo, question, opts \\ []) do
+    history = opts |> Keyword.get(:history, []) |> truncate_history()
+
+    with {:ok, [query_vector]} <- Providers.embed(Config.provider(), [question]) do
+      relevant_chunks = search(repo.id, query_vector, 5)
+
+      context =
+        relevant_chunks
+        |> Enum.map(fn e -> "File: #{e.file_path}\n#{e.content}" end)
+        |> Enum.join("\n\n---\n\n")
+
+      # Build messages: system prompt + history + current question
+      messages =
+        [
+          %{
+            role: "system",
+            content: """
+            You are a helpful assistant that answers questions about code repositories.
+            Use the following code context to answer the user's question.
+            If the answer isn't in the context, say so.
+
+            Context:
+            #{context}
+            """
+          }
+        ] ++ history ++ [%{role: "user", content: question}]
+
+      Providers.chat(Config.provider(), Config.model(), messages, opts)
+    end
+  end
+
+  defp truncate_history(history) do
+    # Process from newest to oldest, accumulating until we hit the limit
+    history
+    |> Enum.reverse()
+    |> Enum.reduce_while({[], 0}, fn msg, {acc, total_chars} ->
+      msg_chars = String.length(msg.content)
+      new_total = total_chars + msg_chars
+
+      if new_total <= @max_history_chars do
+        {:cont, {[msg | acc], new_total}}
+      else
+        {:halt, {acc, total_chars}}
+      end
+    end)
+    |> elem(0)
+  end
+end
