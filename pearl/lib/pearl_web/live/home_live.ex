@@ -305,37 +305,28 @@ defmodule PearlWeb.HomeLive do
      )}
   end
 
-  defp do_generate(%Pearl.Repositories.RepoRecord{} = repo, on_progress) do
+  defp do_generate(%Pearl.Repositories.RepoRecord{id: repo_id} = repo, on_progress) do
     on_progress.("Cloning repository...")
 
-    case Repositories.clone_existing(repo) do
-      {:ok, repo} ->
-        on_progress.("Repository cloned. Indexing for RAG...")
-
-        case Pearl.Rag.index_repo(repo) do
-          {:ok, count} ->
-            on_progress.("Indexed #{count} chunks. Generating wiki...")
-            Repositories.update_status(repo, "generating")
-
-            case Pearl.Wiki.generate(repo, on_progress) do
-              {:ok, _} ->
-                Repositories.update_status(repo, "ready")
-                {:ok, repo}
-
-              {:error, reason} ->
-                Repositories.update_status(repo, "failed")
-                {:error, {:generation_failed, reason}}
-            end
-
-          {:error, reason} ->
-            Repositories.update_status(repo, "failed")
-            {:error, {:indexing_failed, reason}}
-        end
-
+    with {:ok, repo} <- Repositories.clone_existing(repo),
+         _ <- on_progress.("Repository cloned. Indexing for RAG..."),
+         {:ok, count} <- Pearl.Rag.index_repo(repo),
+         _ <- on_progress.("Indexed #{count} chunks. Generating wiki..."),
+         {:ok, repo} <- Repositories.update_status(repo, "generating"),
+         {:ok, _wiki_data} <- Pearl.Wiki.generate(repo, on_progress),
+         {:ok, repo} <- Repositories.update_status(repo, "ready") do
+      {:ok, repo}
+    else
       {:error, {:clone_failed, output}} ->
         {:error, {:clone_failed, "Git clone failed: #{String.slice(output, 0, 200)}"}}
 
       {:error, reason} ->
+        # Fetch fresh repo to avoid stale struct issues when marking as failed
+        case Repositories.get_repo(repo_id) do
+          nil -> :ok
+          fresh_repo -> Repositories.update_status(fresh_repo, "failed")
+        end
+
         {:error, reason}
     end
   end
