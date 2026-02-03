@@ -2,13 +2,13 @@ defmodule PearlWeb.Plugs.Theme do
   @moduledoc """
   Plug to read theme preference from cookies and assign to conn.
 
-  Valid themes: "retro" (light) and "synthwave" (dark).
+  Valid themes: "retro" (light) and "luxury" (dark).
   When no cookie is set, theme is nil and daisyUI's --prefersdark handles system preference.
   """
   import Plug.Conn
 
   @cookie_name "theme"
-  @valid_themes ["retro", "synthwave"]
+  @valid_themes ["retro", "luxury"]
 
   def init(opts), do: opts
 

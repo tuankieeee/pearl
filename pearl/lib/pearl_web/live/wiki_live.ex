@@ -37,8 +37,8 @@ defmodule PearlWeb.WikiLive do
     ~H"""
     <div class="drawer lg:drawer-open">
       <input id="wiki-drawer" type="checkbox" class="drawer-toggle" />
-
-      <!-- Main content area -->
+      
+    <!-- Main content area -->
       <div class="drawer-content flex flex-col bg-base-200 h-screen">
         <!-- Mobile header with menu toggle -->
         <div class="navbar bg-base-100 lg:hidden border-b border-base-300">
@@ -68,14 +68,14 @@ defmodule PearlWeb.WikiLive do
             </button>
           </div>
         </div>
-
-        <!-- Content wrapper -->
+        
+    <!-- Content wrapper -->
         <div class="flex flex-1 overflow-hidden">
           <!-- Main content -->
           <main class="flex-1 overflow-y-auto bg-base-100">
             <%= if @wiki_cache do %>
               <div class="max-w-4xl mx-auto py-8 px-8">
-                <MarkdownComponent.markdown content={@current_content} />
+                <MarkdownComponent.markdown id="wiki-content" content={@current_content} />
               </div>
             <% else %>
               <div class="flex items-center justify-center h-full">
@@ -88,8 +88,8 @@ defmodule PearlWeb.WikiLive do
               </div>
             <% end %>
           </main>
-
-          <!-- Ask panel (slide-out) -->
+          
+    <!-- Ask panel (slide-out) -->
           <%= if @ask_open do %>
             <aside class="w-96 bg-base-100 border-l border-base-300 flex flex-col">
               <div class="p-4 border-b border-base-300 flex items-center justify-between">
@@ -107,7 +107,7 @@ defmodule PearlWeb.WikiLive do
               </div>
 
               <div class="flex-1 overflow-y-auto p-4" id="ask-messages" phx-hook="ScrollToBottom">
-                <%= for message <- @ask_messages do %>
+                <%= for {message, idx} <- Enum.with_index(@ask_messages) do %>
                   <%= if message.role == "user" do %>
                     <!-- User message: right-aligned, primary color -->
                     <div class="chat chat-end">
@@ -122,7 +122,11 @@ defmodule PearlWeb.WikiLive do
                         <%= if message.content == "" and @ask_loading do %>
                           <span class="loading loading-dots loading-sm"></span>
                         <% else %>
-                          <MarkdownComponent.markdown content={message.content} class="prose-sm" />
+                          <MarkdownComponent.markdown
+                            id={"ask-msg-#{idx}"}
+                            content={message.content}
+                            class="prose-sm"
+                          />
                         <% end %>
                       </div>
                     </div>
@@ -153,8 +157,8 @@ defmodule PearlWeb.WikiLive do
           <% end %>
         </div>
       </div>
-
-      <!-- Sidebar -->
+      
+    <!-- Sidebar -->
       <div class="drawer-side">
         <label for="wiki-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <aside class="bg-base-100 min-h-full w-64 flex flex-col border-r border-base-300">

@@ -103,6 +103,7 @@ defmodule Pearl.Rag.Chunker do
 
   defp find_last_space(str) do
     reversed = String.reverse(str)
+
     case :binary.match(reversed, " ") do
       {pos, _} -> String.length(str) - pos - 1
       :nomatch -> nil

@@ -29,7 +29,8 @@ defmodule Pearl.Repositories do
     |> Repo.all()
   end
 
-  @spec update_status(RepoRecord.t(), String.t()) :: {:ok, RepoRecord.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_status(RepoRecord.t(), String.t()) ::
+          {:ok, RepoRecord.t()} | {:error, Ecto.Changeset.t()}
   def update_status(repo, status) do
     repo
     |> RepoRecord.changeset(%{status: status})
@@ -69,15 +70,82 @@ defmodule Pearl.Repositories do
     with {:ok, parsed} <- Git.parse_url(url),
          {:ok, repo} <- find_or_create_repo(url, parsed),
          {:ok, repo} <- update_status(repo, "cloning"),
+         metadata <- fetch_metadata(repo),
          target_path <- repo_path(repo),
          :ok <- ensure_parent_dir(target_path),
          {:ok, _} <- Git.clone(url, target_path, opts),
          {:ok, files} <- Git.list_files(target_path),
-         {:ok, repo} <- update_repo(repo, %{local_path: target_path, file_count: length(files), status: "ready"}) do
+         attrs <-
+           Map.merge(metadata, %{
+             local_path: target_path,
+             file_count: length(files),
+             status: "ready"
+           }),
+         {:ok, repo} <- update_repo(repo, attrs) do
       {:ok, repo}
     else
       {:error, _reason} = error ->
         error
+    end
+  end
+
+  defp fetch_metadata(%RepoRecord{provider: "github", owner: owner, name: name}) do
+    url = "https://api.github.com/repos/#{owner}/#{name}"
+    headers = [{"Accept", "application/vnd.github.v3+json"}, {"User-Agent", "Pearl-Wiki"}]
+
+    case :httpc.request(:get, {String.to_charlist(url), headers}, [], body_format: :binary) do
+      {:ok, {{_, 200, _}, _, body}} ->
+        case Jason.decode(body) do
+          {:ok, data} ->
+            %{
+              description: data["description"],
+              stars: data["stargazers_count"],
+              language: data["language"],
+              pushed_at: parse_datetime(data["pushed_at"])
+            }
+
+          _ ->
+            %{}
+        end
+
+      _ ->
+        %{}
+    end
+  end
+
+  defp fetch_metadata(%RepoRecord{provider: "gitlab", owner: owner, name: name}) do
+    encoded_path = URI.encode("#{owner}/#{name}", &(&1 != ?/))
+    url = "https://gitlab.com/api/v4/projects/#{URI.encode_www_form(encoded_path)}"
+    headers = [{"User-Agent", "Pearl-Wiki"}]
+
+    case :httpc.request(:get, {String.to_charlist(url), headers}, [], body_format: :binary) do
+      {:ok, {{_, 200, _}, _, body}} ->
+        case Jason.decode(body) do
+          {:ok, data} ->
+            %{
+              description: data["description"],
+              stars: data["star_count"],
+              language: nil,
+              pushed_at: parse_datetime(data["last_activity_at"])
+            }
+
+          _ ->
+            %{}
+        end
+
+      _ ->
+        %{}
+    end
+  end
+
+  defp fetch_metadata(_repo), do: %{}
+
+  defp parse_datetime(nil), do: nil
+
+  defp parse_datetime(str) when is_binary(str) do
+    case DateTime.from_iso8601(str) do
+      {:ok, dt, _} -> DateTime.truncate(dt, :second)
+      _ -> nil
     end
   end
 

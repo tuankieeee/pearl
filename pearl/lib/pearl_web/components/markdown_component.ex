@@ -35,14 +35,15 @@ defmodule PearlWeb.MarkdownComponent do
 
   attr :content, :string, required: true
   attr :class, :string, default: ""
+  attr :id, :string, default: "markdown-content"
 
   def markdown(assigns) do
     {html, mermaid_blocks} = extract_mermaid(assigns.content || "")
     assigns = assign(assigns, html: html, mermaid_blocks: mermaid_blocks)
 
     ~H"""
-    <div class={"prose prose-slate max-w-none #{@class}"}>
-      <%= Phoenix.HTML.raw(@html) %>
+    <div id={@id} phx-hook="Highlight" class={"prose prose-slate max-w-none #{@class}"}>
+      {Phoenix.HTML.raw(@html)}
       <%= for {mermaid, index} <- Enum.with_index(@mermaid_blocks) do %>
         <div id={"mermaid-#{index}"} phx-hook="Mermaid" data-mermaid={mermaid} class="my-4">
           <pre class="mermaid"><%= mermaid %></pre>

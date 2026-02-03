@@ -26,11 +26,13 @@ import {hooks as colocatedHooks} from "phoenix-colocated/pearl"
 import topbar from "../vendor/topbar"
 import MermaidHook from "./hooks/mermaid"
 import ScrollToBottomHook from "./hooks/scroll_to_bottom"
+import HighlightHook from "./hooks/highlight"
 
 let Hooks = {
   ...colocatedHooks,
   Mermaid: MermaidHook,
-  ScrollToBottom: ScrollToBottomHook
+  ScrollToBottom: ScrollToBottomHook,
+  Highlight: HighlightHook
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")

@@ -26,7 +26,7 @@ defmodule PearlWeb.HomeLive do
       <div class="max-w-4xl mx-auto py-12 px-4">
         <header class="text-center mb-12">
           <h1 class="text-4xl font-bold mb-2">Pearl</h1>
-          <p class="opacity-70">Inspired by DeepWiki: generate excellent wikis from your code.</p>
+          <p class="opacity-70">Generate wikis from your code.</p>
         </header>
 
         <div class="card bg-base-100 shadow-md mb-8">
@@ -49,64 +49,123 @@ defmodule PearlWeb.HomeLive do
 
               <%= if @error do %>
                 <div role="alert" class="alert alert-error">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-6 w-6 shrink-0 stroke-current"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
-                  <span><%= @error %></span>
+                  <span>{@error}</span>
                 </div>
               <% end %>
 
               <%= if @progress do %>
-                <div role="alert" class="alert alert-info">
+                <div role="alert" class="alert alert-warning">
                   <span class="loading loading-spinner"></span>
-                  <span><%= @progress %></span>
+                  <span>{@progress}</span>
                 </div>
               <% end %>
 
               <button type="submit" disabled={@generating} class="btn btn-primary w-full">
-                <%= if @generating, do: "Generating...", else: "Generate Wiki" %>
+                {if @generating, do: "Generating...", else: "Generate Wiki"}
               </button>
             </form>
           </div>
         </div>
 
         <%= if length(@repos) > 0 do %>
-          <div class="card bg-base-100 shadow-md">
-            <div class="card-body">
-              <h2 class="card-title">Recent Repositories</h2>
-              <ul class="divide-y divide-base-200">
-                <%= for repo <- @repos do %>
-                  <li class="py-3">
-                    <div class="flex items-center justify-between hover:bg-base-200 -mx-3 px-3 py-2 rounded">
-                      <.link navigate={~p"/wiki/#{repo.id}"} class="flex-1">
+          <div class="space-y-4">
+            <h2 class="text-xl font-semibold">Recent Repositories</h2>
+            <%= for repo <- @repos do %>
+              <div class="card bg-base-100 shadow-md">
+                <div class="card-body p-5">
+                  <div class="flex items-start gap-4">
+                    <div class="avatar">
+                      <div class="w-12 rounded-full">
+                        <img src={avatar_url(repo)} alt={repo.owner} />
+                      </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between gap-2">
                         <div>
-                          <span class="font-medium link link-primary"><%= repo.owner %>/<%= repo.name %></span>
-                          <%= if repo.embedding_model do %>
-                            <span class="ml-2 badge badge-ghost badge-sm"><%= repo.embedding_model %></span>
+                          <h3 class="font-bold text-lg">{repo.name}</h3>
+                          <.link href={repo.url} target="_blank" class="text-sm link link-primary">
+                            {repo.owner}/{repo.name} ↗
+                          </.link>
+                        </div>
+                        <div class="flex items-center gap-2">
+                          <span class={"badge #{status_badge(repo.status)}"}>{repo.status}</span>
+                          <%= if @confirm_delete_id == repo.id do %>
+                            <button
+                              phx-click="confirm_delete"
+                              phx-value-id={repo.id}
+                              class="btn btn-error btn-xs"
+                            >
+                              Delete
+                            </button>
+                            <button phx-click="cancel_delete" class="btn btn-ghost btn-xs">
+                              Cancel
+                            </button>
+                          <% else %>
+                            <button
+                              phx-click="request_delete"
+                              phx-value-id={repo.id}
+                              class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+                              disabled={repo.status in ["cloning", "analyzing", "generating"]}
+                            >
+                              <.icon name="hero-trash" class="size-4" />
+                            </button>
                           <% end %>
                         </div>
-                      </.link>
-                      <div class="flex items-center gap-2">
-                        <span class={"badge #{status_badge(repo.status)}"}><%= repo.status %></span>
-                        <%= if @confirm_delete_id == repo.id do %>
-                          <button phx-click="confirm_delete" phx-value-id={repo.id} class="btn btn-error btn-xs">Delete</button>
-                          <button phx-click="cancel_delete" class="btn btn-ghost btn-xs">Cancel</button>
-                        <% else %>
-                          <button
-                            phx-click="request_delete"
-                            phx-value-id={repo.id}
-                            class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
-                            disabled={repo.status in ["cloning", "analyzing"]}
-                          >
-                            <.icon name="hero-trash" class="size-4" />
-                          </button>
+                      </div>
+
+                      <%= if repo.description do %>
+                        <p class="text-sm opacity-70 mt-2 line-clamp-2">{repo.description}</p>
+                      <% end %>
+
+                      <div class="flex flex-wrap items-center gap-3 mt-3">
+                        <%= if repo.stars do %>
+                          <span class="badge badge-outline gap-1">
+                            <.icon name="hero-star" class="size-3" />
+                            {format_number(repo.stars)} stars
+                          </span>
+                        <% end %>
+                        <%= if repo.language do %>
+                          <span class="badge badge-outline gap-1">
+                            <span class={"w-2 h-2 rounded-full #{language_color(repo.language)}"}>
+                            </span>
+                            {repo.language}
+                          </span>
+                        <% end %>
+                        <%= if repo.pushed_at do %>
+                          <span class="text-xs opacity-60">
+                            Updated: {format_date(repo.pushed_at)}
+                          </span>
                         <% end %>
                       </div>
                     </div>
-                  </li>
-                <% end %>
-              </ul>
-            </div>
+                  </div>
+                  <div class="card-actions justify-end mt-3">
+                    <%= if repo.status == "ready" do %>
+                      <.link navigate={~p"/wiki/#{repo.id}"} class="btn btn-primary btn-sm">
+                        View Wiki
+                      </.link>
+                    <% else %>
+                      <button class="btn btn-primary btn-sm" disabled>
+                        {status_button_text(repo.status)}
+                      </button>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
           </div>
         <% end %>
       </div>
@@ -144,18 +203,25 @@ defmodule PearlWeb.HomeLive do
 
     case Repositories.get_repo(repo_id) do
       nil ->
-        {:noreply, socket |> assign(confirm_delete_id: nil) |> put_flash(:error, "Repository not found")}
+        {:noreply,
+         socket |> assign(confirm_delete_id: nil) |> put_flash(:error, "Repository not found")}
 
       repo ->
         case Repositories.delete_repo(repo) do
           {:ok, deleted} ->
             {:noreply,
              socket
-             |> assign(repos: Enum.reject(socket.assigns.repos, &(&1.id == repo_id)), confirm_delete_id: nil)
+             |> assign(
+               repos: Enum.reject(socket.assigns.repos, &(&1.id == repo_id)),
+               confirm_delete_id: nil
+             )
              |> put_flash(:info, "Deleted #{deleted.owner}/#{deleted.name}")}
 
           {:error, _} ->
-            {:noreply, socket |> assign(confirm_delete_id: nil) |> put_flash(:error, "Failed to delete repository")}
+            {:noreply,
+             socket
+             |> assign(confirm_delete_id: nil)
+             |> put_flash(:error, "Failed to delete repository")}
         end
     end
   end
@@ -203,13 +269,20 @@ defmodule PearlWeb.HomeLive do
         case Pearl.Rag.index_repo(repo) do
           {:ok, count} ->
             on_progress.("Indexed #{count} chunks. Generating wiki...")
+            Repositories.update_status(repo, "generating")
 
             case Pearl.Wiki.generate(repo, on_progress) do
-              {:ok, _} -> {:ok, repo}
-              {:error, reason} -> {:error, {:generation_failed, reason}}
+              {:ok, _} ->
+                Repositories.update_status(repo, "ready")
+                {:ok, repo}
+
+              {:error, reason} ->
+                Repositories.update_status(repo, "failed")
+                {:error, {:generation_failed, reason}}
             end
 
           {:error, reason} ->
+            Repositories.update_status(repo, "failed")
             {:error, {:indexing_failed, reason}}
         end
 
@@ -229,7 +302,42 @@ defmodule PearlWeb.HomeLive do
 
   defp status_badge("ready"), do: "badge-success"
   defp status_badge("cloning"), do: "badge-warning"
-  defp status_badge("analyzing"), do: "badge-info"
+  defp status_badge("analyzing"), do: "badge-warning"
+  defp status_badge("generating"), do: "badge-info"
   defp status_badge("failed"), do: "badge-error"
   defp status_badge(_), do: "badge-neutral"
+
+  defp status_button_text("generating"), do: "Generating..."
+  defp status_button_text("cloning"), do: "Cloning..."
+  defp status_button_text("analyzing"), do: "Analyzing..."
+  defp status_button_text(_), do: "View Wiki"
+
+  defp avatar_url(%{provider: "github", owner: owner}),
+    do: "https://github.com/#{owner}.png?size=64"
+
+  defp avatar_url(%{provider: "gitlab", owner: owner}),
+    do: "https://gitlab.com/uploads/-/system/user/avatar/#{owner}/avatar.png"
+
+  defp avatar_url(_), do: "https://api.dicebear.com/7.x/identicon/svg?seed=repo"
+
+  defp format_number(n) when n >= 1000, do: "#{Float.round(n / 1000, 1)}k"
+  defp format_number(n), do: to_string(n)
+
+  defp format_date(datetime) do
+    Calendar.strftime(datetime, "%b %d, %Y")
+  end
+
+  defp language_color("Elixir"), do: "bg-purple-500"
+  defp language_color("Python"), do: "bg-blue-500"
+  defp language_color("JavaScript"), do: "bg-yellow-400"
+  defp language_color("TypeScript"), do: "bg-blue-600"
+  defp language_color("Ruby"), do: "bg-red-600"
+  defp language_color("Go"), do: "bg-cyan-500"
+  defp language_color("Rust"), do: "bg-orange-600"
+  defp language_color("Java"), do: "bg-orange-500"
+  defp language_color("C"), do: "bg-gray-600"
+  defp language_color("C++"), do: "bg-pink-600"
+  defp language_color("Swift"), do: "bg-orange-500"
+  defp language_color("Kotlin"), do: "bg-purple-600"
+  defp language_color(_), do: "bg-gray-400"
 end

@@ -66,7 +66,10 @@ defmodule Pearl.Wiki.Generator do
       |> Enum.with_index(1)
       |> Enum.reduce(%{}, fn {page_spec, index}, acc ->
         page_id = page_spec["id"]
-        on_progress.("Generating page #{index}/#{length(wiki_structure["pages"])}: #{page_spec["title"]}...")
+
+        on_progress.(
+          "Generating page #{index}/#{length(wiki_structure["pages"])}: #{page_spec["title"]}..."
+        )
 
         case generate_page(repo, page_spec, provider, model) do
           {:ok, content} -> Map.put(acc, page_id, content)
@@ -127,7 +130,10 @@ defmodule Pearl.Wiki.Generator do
       String.contains?(combined, "overview") ->
         :overview
 
-      Enum.any?(~w(getting-started installation quickstart setup), &String.contains?(combined, &1)) ->
+      Enum.any?(
+        ~w(getting-started installation quickstart setup),
+        &String.contains?(combined, &1)
+      ) ->
         :getting_started
 
       Enum.any?(~w(architecture design structure), &String.contains?(combined, &1)) ->

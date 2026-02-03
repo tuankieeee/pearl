@@ -13,7 +13,10 @@ defmodule Pearl.Providers.OpenRouterTest do
     test "returns error when API key not configured" do
       # Temporarily clear the API key to test the no-key case
       original = Application.get_env(:pearl, :providers)
-      Application.put_env(:pearl, :providers,
+
+      Application.put_env(
+        :pearl,
+        :providers,
         Keyword.put(original, :openrouter, Keyword.put(original[:openrouter], :api_key, nil))
       )
 

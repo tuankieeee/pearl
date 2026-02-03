@@ -2,6 +2,7 @@
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",
     "daisyui": "^5.5.16",
+    "highlight.js": "^11.11.1",
     "mermaid": "^11.12.2"
   }
 }

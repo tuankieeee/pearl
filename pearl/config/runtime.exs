@@ -20,8 +20,7 @@ if System.get_env("PHX_SERVER") do
   config :pearl, PearlWeb.Endpoint, server: true
 end
 
-config :pearl, PearlWeb.Endpoint,
-  http: [port: String.to_integer(System.get_env("PORT", "4000"))]
+config :pearl, PearlWeb.Endpoint, http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 # LLM configuration from environment
 llm_provider =
@@ -142,9 +141,9 @@ config :pearl, :providers,
   ollama: [
     host: System.get_env("OLLAMA_HOST", "http://localhost:11434"),
     default_model: System.get_env("OLLAMA_DEFAULT_MODEL", "llama3.2:3b"),
-    embedding_model: System.get_env("OLLAMA_EMBEDDING_MODEL", "rjmalagon/gte-qwen2-1.5b-instruct-embed-f16")
+    embedding_model:
+      System.get_env("OLLAMA_EMBEDDING_MODEL", "rjmalagon/gte-qwen2-1.5b-instruct-embed-f16")
   ]
 
 # Storage configuration from environment
-config :pearl, :storage,
-  repos_path: System.get_env("PEARL_REPOS_PATH", "~/.pearl/repos")
+config :pearl, :storage, repos_path: System.get_env("PEARL_REPOS_PATH", "~/.pearl/repos")

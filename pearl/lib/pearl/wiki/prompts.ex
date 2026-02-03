@@ -55,7 +55,8 @@ defmodule Pearl.Wiki.Prompts do
       },
       %{
         role: "assistant",
-        content: ~s({"pages": [{"id": "overview", "title": "Overview", "description": "Project overview and purpose"}, {"id": "getting-started", "title": "Getting Started", "description": "Installation and setup"}, {"id": "architecture", "title": "Architecture", "description": "Code structure and design"}]})
+        content:
+          ~s({"pages": [{"id": "overview", "title": "Overview", "description": "Project overview and purpose"}, {"id": "getting-started", "title": "Getting Started", "description": "Installation and setup"}, {"id": "architecture", "title": "Architecture", "description": "Code structure and design"}]})
       },
       %{
         role: "user",

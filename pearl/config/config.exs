@@ -74,8 +74,7 @@ config :pearl, :providers,
   ]
 
 # Storage configuration
-config :pearl, :storage,
-  repos_path: "~/.pearl/repos"
+config :pearl, :storage, repos_path: "~/.pearl/repos"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

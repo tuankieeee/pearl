@@ -123,10 +123,10 @@ defmodule PearlWeb.Layouts do
   def theme_toggle(assigns) do
     ~H"""
     <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/2 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=synthwave]_&]:left-1/2 transition-[left]" />
+      <div class="absolute w-1/2 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=luxury]_&]:left-1/2 transition-[left]" />
 
       <.theme_button theme="retro" icon="hero-sun-micro" />
-      <.theme_button theme="synthwave" icon="hero-moon-micro" />
+      <.theme_button theme="luxury" icon="hero-moon-micro" />
     </div>
     """
   end

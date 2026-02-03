@@ -28,38 +28,70 @@ defmodule Pearl.Wiki.GeneratorTest do
 
   describe "determine_page_type/1" do
     test "returns :overview for overview pages" do
-      assert Generator.determine_page_type(%{"id" => "overview", "title" => "Overview"}) == :overview
-      assert Generator.determine_page_type(%{"id" => "project-overview", "title" => "Project"}) == :overview
+      assert Generator.determine_page_type(%{"id" => "overview", "title" => "Overview"}) ==
+               :overview
+
+      assert Generator.determine_page_type(%{"id" => "project-overview", "title" => "Project"}) ==
+               :overview
     end
 
     test "returns :getting_started for installation pages" do
-      assert Generator.determine_page_type(%{"id" => "getting-started", "title" => "Getting Started"}) == :getting_started
-      assert Generator.determine_page_type(%{"id" => "installation", "title" => "Installation"}) == :getting_started
-      assert Generator.determine_page_type(%{"id" => "quickstart", "title" => "Quickstart Guide"}) == :getting_started
-      assert Generator.determine_page_type(%{"id" => "setup", "title" => "Setup"}) == :getting_started
+      assert Generator.determine_page_type(%{
+               "id" => "getting-started",
+               "title" => "Getting Started"
+             }) == :getting_started
+
+      assert Generator.determine_page_type(%{"id" => "installation", "title" => "Installation"}) ==
+               :getting_started
+
+      assert Generator.determine_page_type(%{"id" => "quickstart", "title" => "Quickstart Guide"}) ==
+               :getting_started
+
+      assert Generator.determine_page_type(%{"id" => "setup", "title" => "Setup"}) ==
+               :getting_started
     end
 
     test "returns :architecture for architecture pages" do
-      assert Generator.determine_page_type(%{"id" => "architecture", "title" => "Architecture"}) == :architecture
-      assert Generator.determine_page_type(%{"id" => "design", "title" => "System Design"}) == :architecture
-      assert Generator.determine_page_type(%{"id" => "structure", "title" => "Project Structure"}) == :architecture
+      assert Generator.determine_page_type(%{"id" => "architecture", "title" => "Architecture"}) ==
+               :architecture
+
+      assert Generator.determine_page_type(%{"id" => "design", "title" => "System Design"}) ==
+               :architecture
+
+      assert Generator.determine_page_type(%{"id" => "structure", "title" => "Project Structure"}) ==
+               :architecture
     end
 
     test "returns :configuration for config pages" do
-      assert Generator.determine_page_type(%{"id" => "configuration", "title" => "Configuration"}) == :configuration
-      assert Generator.determine_page_type(%{"id" => "config", "title" => "Config Options"}) == :configuration
-      assert Generator.determine_page_type(%{"id" => "settings", "title" => "Settings"}) == :configuration
+      assert Generator.determine_page_type(%{"id" => "configuration", "title" => "Configuration"}) ==
+               :configuration
+
+      assert Generator.determine_page_type(%{"id" => "config", "title" => "Config Options"}) ==
+               :configuration
+
+      assert Generator.determine_page_type(%{"id" => "settings", "title" => "Settings"}) ==
+               :configuration
     end
 
     test "returns :default for other pages" do
-      assert Generator.determine_page_type(%{"id" => "api", "title" => "API Reference"}) == :default
-      assert Generator.determine_page_type(%{"id" => "authentication", "title" => "Authentication"}) == :default
+      assert Generator.determine_page_type(%{"id" => "api", "title" => "API Reference"}) ==
+               :default
+
+      assert Generator.determine_page_type(%{
+               "id" => "authentication",
+               "title" => "Authentication"
+             }) == :default
     end
   end
 
   describe "extract_keywords/1" do
     test "extracts keywords from page spec" do
-      page_spec = %{"id" => "api-endpoints", "title" => "API Endpoints", "description" => "REST API documentation"}
+      page_spec = %{
+        "id" => "api-endpoints",
+        "title" => "API Endpoints",
+        "description" => "REST API documentation"
+      }
+
       keywords = Generator.extract_keywords(page_spec)
 
       assert "api" in keywords
@@ -110,8 +142,11 @@ defmodule Pearl.Wiki.GeneratorTest do
       files = ["lib/my_app/application.ex", "lib/my_app/router.ex", "lib/my_app/helpers.ex"]
       scores = Generator.score_files(files, :architecture, [])
 
-      router_score = Enum.find(scores, fn {path, _} -> path == "lib/my_app/router.ex" end) |> elem(1)
-      helpers_score = Enum.find(scores, fn {path, _} -> path == "lib/my_app/helpers.ex" end) |> elem(1)
+      router_score =
+        Enum.find(scores, fn {path, _} -> path == "lib/my_app/router.ex" end) |> elem(1)
+
+      helpers_score =
+        Enum.find(scores, fn {path, _} -> path == "lib/my_app/helpers.ex" end) |> elem(1)
 
       assert router_score > helpers_score
     end

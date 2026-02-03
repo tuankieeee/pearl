@@ -10,9 +10,9 @@
 /* Typography for prose/markdown */
 @plugin "@tailwindcss/typography";
 
-/* daisyUI with retro (light) and synthwave (dark) themes */
+/* daisyUI with retro (light) and luxury (dark) themes */
 @plugin "daisyui" {
-  themes: retro --default, synthwave --prefersdark;
+  themes: retro --default, luxury --prefersdark;
 }
 
 /* LiveView loading states */
@@ -22,3 +22,161 @@
 
 /* LiveView wrapper transparency */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
+
+/* Highlight.js - GitHub Light theme for retro */
+[data-theme="retro"] .hljs {
+  color: #24292e;
+  background: #f6f8fa;
+}
+[data-theme="retro"] .hljs-doctag,
+[data-theme="retro"] .hljs-keyword,
+[data-theme="retro"] .hljs-meta .hljs-keyword,
+[data-theme="retro"] .hljs-template-tag,
+[data-theme="retro"] .hljs-template-variable,
+[data-theme="retro"] .hljs-type,
+[data-theme="retro"] .hljs-variable.language_ {
+  color: #d73a49;
+}
+[data-theme="retro"] .hljs-title,
+[data-theme="retro"] .hljs-title.class_,
+[data-theme="retro"] .hljs-title.class_.inherited__,
+[data-theme="retro"] .hljs-title.function_ {
+  color: #6f42c1;
+}
+[data-theme="retro"] .hljs-attr,
+[data-theme="retro"] .hljs-attribute,
+[data-theme="retro"] .hljs-literal,
+[data-theme="retro"] .hljs-meta,
+[data-theme="retro"] .hljs-number,
+[data-theme="retro"] .hljs-operator,
+[data-theme="retro"] .hljs-selector-attr,
+[data-theme="retro"] .hljs-selector-class,
+[data-theme="retro"] .hljs-selector-id,
+[data-theme="retro"] .hljs-variable {
+  color: #005cc5;
+}
+[data-theme="retro"] .hljs-string,
+[data-theme="retro"] .hljs-meta .hljs-string,
+[data-theme="retro"] .hljs-regexp {
+  color: #032f62;
+}
+[data-theme="retro"] .hljs-built_in,
+[data-theme="retro"] .hljs-symbol {
+  color: #e36209;
+}
+[data-theme="retro"] .hljs-code,
+[data-theme="retro"] .hljs-comment,
+[data-theme="retro"] .hljs-formula {
+  color: #6a737d;
+}
+[data-theme="retro"] .hljs-name,
+[data-theme="retro"] .hljs-quote,
+[data-theme="retro"] .hljs-selector-pseudo,
+[data-theme="retro"] .hljs-selector-tag {
+  color: #22863a;
+}
+[data-theme="retro"] .hljs-subst {
+  color: #24292e;
+}
+[data-theme="retro"] .hljs-section {
+  color: #005cc5;
+  font-weight: bold;
+}
+[data-theme="retro"] .hljs-bullet {
+  color: #735c0f;
+}
+[data-theme="retro"] .hljs-emphasis {
+  color: #24292e;
+  font-style: italic;
+}
+[data-theme="retro"] .hljs-strong {
+  color: #24292e;
+  font-weight: bold;
+}
+[data-theme="retro"] .hljs-addition {
+  color: #22863a;
+  background-color: #f0fff4;
+}
+[data-theme="retro"] .hljs-deletion {
+  color: #b31d28;
+  background-color: #ffeef0;
+}
+
+/* Highlight.js - GitHub Dark theme for luxury */
+[data-theme="luxury"] .hljs {
+  color: #c9d1d9;
+  background: #0d1117;
+}
+[data-theme="luxury"] .hljs-doctag,
+[data-theme="luxury"] .hljs-keyword,
+[data-theme="luxury"] .hljs-meta .hljs-keyword,
+[data-theme="luxury"] .hljs-template-tag,
+[data-theme="luxury"] .hljs-template-variable,
+[data-theme="luxury"] .hljs-type,
+[data-theme="luxury"] .hljs-variable.language_ {
+  color: #ff7b72;
+}
+[data-theme="luxury"] .hljs-title,
+[data-theme="luxury"] .hljs-title.class_,
+[data-theme="luxury"] .hljs-title.class_.inherited__,
+[data-theme="luxury"] .hljs-title.function_ {
+  color: #d2a8ff;
+}
+[data-theme="luxury"] .hljs-attr,
+[data-theme="luxury"] .hljs-attribute,
+[data-theme="luxury"] .hljs-literal,
+[data-theme="luxury"] .hljs-meta,
+[data-theme="luxury"] .hljs-number,
+[data-theme="luxury"] .hljs-operator,
+[data-theme="luxury"] .hljs-selector-attr,
+[data-theme="luxury"] .hljs-selector-class,
+[data-theme="luxury"] .hljs-selector-id,
+[data-theme="luxury"] .hljs-variable {
+  color: #79c0ff;
+}
+[data-theme="luxury"] .hljs-string,
+[data-theme="luxury"] .hljs-meta .hljs-string,
+[data-theme="luxury"] .hljs-regexp {
+  color: #a5d6ff;
+}
+[data-theme="luxury"] .hljs-built_in,
+[data-theme="luxury"] .hljs-symbol {
+  color: #ffa657;
+}
+[data-theme="luxury"] .hljs-code,
+[data-theme="luxury"] .hljs-comment,
+[data-theme="luxury"] .hljs-formula {
+  color: #8b949e;
+}
+[data-theme="luxury"] .hljs-name,
+[data-theme="luxury"] .hljs-quote,
+[data-theme="luxury"] .hljs-selector-pseudo,
+[data-theme="luxury"] .hljs-selector-tag {
+  color: #7ee787;
+}
+[data-theme="luxury"] .hljs-subst {
+  color: #c9d1d9;
+}
+[data-theme="luxury"] .hljs-section {
+  color: #1f6feb;
+  font-weight: bold;
+}
+[data-theme="luxury"] .hljs-bullet {
+  color: #f2cc60;
+}
+[data-theme="luxury"] .hljs-emphasis {
+  color: #c9d1d9;
+  font-style: italic;
+}
+[data-theme="luxury"] .hljs-strong {
+  color: #c9d1d9;
+  font-weight: bold;
+}
+[data-theme="luxury"] .hljs-addition {
+  color: #aff5b4;
+  background-color: #033a16;
+}
+[data-theme="luxury"] .hljs-deletion {
+  color: #ffdcd7;
+  background-color: #67060c;
+}

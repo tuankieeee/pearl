@@ -15,6 +15,10 @@ defmodule Pearl.Repositories.RepoRecord do
     field :status, :string, default: "pending"
     field :file_count, :integer
     field :embedding_model, :string
+    field :description, :string
+    field :stars, :integer
+    field :language, :string
+    field :pushed_at, :utc_datetime
 
     has_many :wiki_caches, WikiCache, foreign_key: :repo_id
     has_many :embeddings, Embedding, foreign_key: :repo_id
@@ -23,14 +27,31 @@ defmodule Pearl.Repositories.RepoRecord do
   end
 
   @required_fields [:url, :provider, :owner, :name]
-  @optional_fields [:branch, :local_path, :status, :file_count, :embedding_model]
+  @optional_fields [
+    :branch,
+    :local_path,
+    :status,
+    :file_count,
+    :embedding_model,
+    :description,
+    :stars,
+    :language,
+    :pushed_at
+  ]
 
   def changeset(repo_record, attrs) do
     repo_record
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_inclusion(:provider, ["github", "gitlab", "bitbucket"])
-    |> validate_inclusion(:status, ["pending", "cloning", "analyzing", "ready", "failed"])
+    |> validate_inclusion(:status, [
+      "pending",
+      "cloning",
+      "analyzing",
+      "generating",
+      "ready",
+      "failed"
+    ])
     |> unique_constraint([:provider, :owner, :name, :branch])
   end
 end

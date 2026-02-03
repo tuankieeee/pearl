@@ -1,7 +1,7 @@
 defmodule PearlWeb.ThemeController do
   use PearlWeb, :controller
 
-  @valid_themes ["retro", "synthwave"]
+  @valid_themes ["retro", "luxury"]
 
   def update(conn, %{"theme" => theme}) when theme in @valid_themes do
     conn
