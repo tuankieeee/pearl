@@ -1,1 +1,193 @@
-# pearl
+# Pearl
+
+Pearl is a RAG (Retrieval-Augmented Generation) system built with Elixir and Phoenix. It generates comprehensive wikis from code repositories, allowing you to ask questions about any codebase using natural language.
+
+This project was inspired by [DeepWiki from Devin](https://cognition.ai/blog/deepwiki) and created as a learning exercise to explore Elixir, Phoenix LiveView, and RAG architectures—starting with naive RAG and progressing through techniques from recent research papers.
+
+Named after [Pearl I. Young](https://en.wikipedia.org/wiki/Pearl_I._Young), NASA's first female technical professional and a pioneer in technical documentation.
+
+## What Does Pearl Do?
+
+1. **Clone any Git repository** — Point Pearl at a GitHub URL and it fetches the code
+2. **Generate a wiki** — An LLM analyzes the codebase and creates structured documentation
+3. **Ask questions** — Use the built-in chat to ask questions about the code; Pearl finds relevant code snippets and explains them
+
+## Prerequisites
+
+Before setting up Pearl, you'll need to install:
+
+### 1. Elixir and Erlang
+
+Elixir is the programming language Pearl is written in. The easiest way to install it:
+
+#### macOS (using Homebrew)
+
+```bash
+brew install elixir
+```
+
+#### Other platforms
+
+Follow the official [Elixir installation guide](https://elixir-lang.org/install.html).
+
+Verify the installation:
+
+```bash
+elixir --version
+# Should show Elixir 1.15 or higher
+```
+
+### 2. PostgreSQL with pgvector
+
+Pearl uses PostgreSQL to store repository data and vector embeddings for search.
+
+#### macOS (using Homebrew)
+
+```bash
+brew install postgresql@16 pgvector
+brew services start postgresql@16
+```
+
+#### Other platforms
+
+See the [PostgreSQL download page](https://www.postgresql.org/download/) and [pgvector installation instructions](https://github.com/pgvector/pgvector#installation).
+
+### 3. LLM Provider
+
+Pearl needs an LLM to generate wikis and answer questions. Choose one:
+
+#### Option A: OpenRouter (Recommended for beginners)
+
+1. Create an account at [openrouter.ai](https://openrouter.ai/)
+2. Generate an API key
+3. Set the environment variable:
+
+   ```bash
+   export OPENROUTER_API_KEY=sk-your-key-here
+   ```
+
+#### Option B: Ollama (Run models locally)
+
+1. Install from [ollama.ai](https://ollama.ai/)
+2. Pull a model:
+
+   ```bash
+   ollama pull llama3.2:3b
+   ```
+
+## Setup
+
+1. **Clone this repository:**
+
+   ```bash
+   git clone https://github.com/existential-birds/pearl.git
+   cd pearl/pearl
+   ```
+
+2. **Configure your LLM provider** by setting environment variables (either export directly in your terminal or add to a `.env` file to source later):
+
+   ```bash
+   # For OpenRouter (recommended)
+   export LLM_PROVIDER=openrouter
+   export LLM_MODEL=openai/gpt-5.2
+   export EMBEDDING_MODEL=openai/text-embedding-3-small
+   export OPENROUTER_API_KEY=sk-your-key-here
+
+   # For Ollama (local)
+   # export LLM_PROVIDER=ollama
+   # export OLLAMA_HOST=http://localhost:11434
+   # export OLLAMA_DEFAULT_MODEL=llama3.2:3b
+   ```
+
+3. **Install JavaScript dependencies:**
+
+   ```bash
+   cd assets && npm install && cd ..
+   ```
+
+4. **Run setup:**
+
+   ```bash
+   mix setup
+   ```
+
+5. **Start the server:**
+
+   ```bash
+   mix phx.server
+   ```
+
+6. **Open Pearl** in your browser at [http://localhost:4000](http://localhost:4000)
+
+## Usage
+
+1. On the home page, paste a GitHub repository URL and click "Clone"
+2. Once cloned, click "Generate Wiki" to create documentation
+3. Browse the generated wiki pages
+4. Use the chat panel to ask questions about the codebase
+
+## Architecture
+
+Pearl combines several components:
+
+- **Phoenix LiveView** — Real-time web interface with no JavaScript required
+- **RAG Pipeline** — Chunks code files, generates embeddings, and searches for relevant context
+- **LLM Integration** — Supports both cloud (OpenRouter) and local (Ollama) providers
+- **pgvector** — Stores and searches vector embeddings for similarity matching
+
+For detailed architecture documentation, see [CLAUDE.md](./CLAUDE.md).
+
+### RAG Implementation
+
+One goal of Pearl is to explore different RAG (Retrieval-Augmented Generation) architectures. We start with the simplest approach and progressively implement more sophisticated techniques from research papers.
+
+#### Current: Naive RAG
+
+Pearl currently implements **Naive RAG**, the baseline architecture:
+
+| Component | Implementation |
+|-----------|----------------|
+| **Chunking** | Fixed 500-token chunks with semantic break detection (paragraph boundaries preferred) |
+| **Embedding** | OpenAI `text-embedding-3-small` (1536 dimensions) via OpenRouter, or `nomic-embed-text` via Ollama |
+| **Vector Store** | PostgreSQL with pgvector extension, HNSW indexing |
+| **Retrieval** | Top-5 chunks by cosine similarity |
+| **Generation** | Retrieved chunks concatenated into system prompt with chat history |
+
+This approach is simple and works well for small-to-medium codebases, but has known limitations: no chunk overlap means context can be lost at boundaries, fixed-size chunking ignores code semantics, and top-k retrieval may miss relevant but dissimilar chunks.
+
+#### Roadmap: Advanced RAG Techniques
+
+Future implementations will explore techniques from RAG research:
+
+| Technique | Description | Paper/Source |
+|-----------|-------------|--------------|
+| **Chunk Overlap** | Sliding window with 10-20% overlap to preserve context at boundaries | — |
+| **Semantic Chunking** | Split by AST nodes (functions, classes) instead of token count | — |
+| **Hybrid Search** | Combine vector similarity with BM25 keyword matching | — |
+| **HyDE** | Generate hypothetical answer, embed that instead of the question | [Gao et al. 2022](https://arxiv.org/abs/2212.10496) |
+| **Reranking** | Use a cross-encoder to re-score top-k results | [Nogueira & Cho 2019](https://arxiv.org/abs/1901.04085) |
+| **Parent Document Retrieval** | Retrieve small chunks, return surrounding context | [LangChain](https://python.langchain.com/docs/modules/data_connection/retrievers/parent_document_retriever) |
+| **Query Decomposition** | Break complex questions into sub-queries | [Press et al. 2022](https://arxiv.org/abs/2210.03350) |
+| **RAPTOR** | Build hierarchical summaries for multi-level retrieval | [Sarthi et al. 2024](https://arxiv.org/abs/2401.18059) |
+| **Graph RAG** | Extract entity relationships, traverse graph for context | [Microsoft 2024](https://arxiv.org/abs/2404.16130) |
+| **Corrective RAG (CRAG)** | Evaluate retrieval quality, trigger web search if needed | [Yan et al. 2024](https://arxiv.org/abs/2401.15884) |
+| **Self-RAG** | LLM decides when to retrieve and critiques its own outputs | [Asai et al. 2023](https://arxiv.org/abs/2310.11511) |
+
+Each technique will be implemented as a configurable option, allowing comparison between approaches on the same codebase.
+
+## Development
+
+```bash
+# Run tests
+mix test
+
+# Format code
+mix format
+
+# Run pre-commit checks
+mix precommit
+```
+
+## License
+
+Apache 2.0
