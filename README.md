@@ -157,21 +157,38 @@ This approach is simple and works well for small-to-medium codebases, but has kn
 
 #### Roadmap: Advanced RAG Techniques
 
-Future implementations will explore techniques from RAG research:
+Future implementations will explore 11 RAG strategies from [ottomator-agents](https://github.com/coleam00/ottomator-agents/tree/main/all-rag-strategies). The recommended approach is to combine 3-5 strategies (e.g., Re-ranking + Agentic RAG + Context-aware Chunking).
 
-| Technique | Description | Paper/Source |
-|-----------|-------------|--------------|
-| **Chunk Overlap** | Sliding window with 10-20% overlap to preserve context at boundaries | — |
-| **Semantic Chunking** | Split by AST nodes (functions, classes) instead of token count | — |
-| **Hybrid Search** | Combine vector similarity with BM25 keyword matching | — |
-| **HyDE** | Generate hypothetical answer, embed that instead of the question | [Gao et al. 2022](https://arxiv.org/abs/2212.10496) |
-| **Reranking** | Use a cross-encoder to re-score top-k results | [Nogueira & Cho 2019](https://arxiv.org/abs/1901.04085) |
-| **Parent Document Retrieval** | Retrieve small chunks, return surrounding context | [LangChain](https://python.langchain.com/docs/modules/data_connection/retrievers/parent_document_retriever) |
-| **Query Decomposition** | Break complex questions into sub-queries | [Press et al. 2022](https://arxiv.org/abs/2210.03350) |
-| **RAPTOR** | Build hierarchical summaries for multi-level retrieval | [Sarthi et al. 2024](https://arxiv.org/abs/2401.18059) |
-| **Graph RAG** | Extract entity relationships, traverse graph for context | [Microsoft 2024](https://arxiv.org/abs/2404.16130) |
-| **Corrective RAG (CRAG)** | Evaluate retrieval quality, trigger web search if needed | [Yan et al. 2024](https://arxiv.org/abs/2401.15884) |
-| **Self-RAG** | LLM decides when to retrieve and critiques its own outputs | [Asai et al. 2023](https://arxiv.org/abs/2310.11511) |
+**Chunking Strategies**
+
+| Technique | Description | Reference |
+|-----------|-------------|-----------|
+| **Context-aware Chunking** | Use embedding models to find natural document boundaries, preserving structure | [Docling](https://docling-project.github.io/docling/concepts/chunking/) |
+| **Late Chunking** | Embed entire document first, then chunk at embedding level to retain full context | [arXiv:2409.04701](https://arxiv.org/abs/2409.04701) |
+| **Contextual Retrieval** | LLM adds 1-2 context sentences to each chunk before embedding (35-49% fewer retrieval failures) | [Anthropic](https://www.anthropic.com/news/contextual-retrieval) |
+
+**Retrieval Strategies**
+
+| Technique | Description | Reference |
+|-----------|-------------|-----------|
+| **Re-ranking** | Two-stage retrieval: vector search for candidates, cross-encoder model to re-score top results | [MS MARCO](https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2) |
+| **Hierarchical RAG** | Search small child chunks for precision, return larger parent chunks for context | [GraphRAG](https://graphrag.com/reference/graphrag/parent-child-retriever/) |
+| **Knowledge Graphs** | Combine vector search with graph database to capture entity relationships | [Graphiti](https://github.com/getzep/graphiti), [arXiv:2501.13956](https://arxiv.org/abs/2501.13956) |
+
+**Query Strategies**
+
+| Technique | Description | Reference |
+|-----------|-------------|-----------|
+| **Query Expansion** | LLM enriches user query with more specific terms before searching | [Haystack](https://haystack.deepset.ai/blog/query-expansion) |
+| **Multi-Query RAG** | Generate 3-4 query variations, search in parallel, deduplicate results | [arXiv:2411.13154](https://arxiv.org/abs/2411.13154) |
+
+**Advanced Strategies**
+
+| Technique | Description | Reference |
+|-----------|-------------|-----------|
+| **Agentic RAG** | Agent autonomously chooses retrieval method (semantic search, full document, hybrid) per query | [arXiv:2501.09136](https://arxiv.org/abs/2501.09136) |
+| **Self-Reflective RAG** | LLM grades retrieval relevance (1-5), automatically refines query if score < 3 | [arXiv:2310.11511](https://arxiv.org/abs/2310.11511) |
+| **Fine-tuned Embeddings** | Train embedding model on domain-specific data for 5-10% accuracy improvement | [Databricks](https://www.databricks.com/blog/improving-retrieval-and-rag-embedding-model-finetuning) |
 
 Each technique will be implemented as a configurable option, allowing comparison between approaches on the same codebase.
 
