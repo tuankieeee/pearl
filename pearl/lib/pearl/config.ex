@@ -51,4 +51,32 @@ defmodule Pearl.Config do
   def embedding_model do
     Application.get_env(:pearl, :embedding_model, "openai/text-embedding-3-small")
   end
+
+  @doc """
+  Returns the batch size for embedding API calls.
+
+  Larger batches reduce API call overhead but increase memory usage.
+  Reads from `Application.get_env(:pearl, :embedding_batch_size)`.
+
+  ## Returns
+  - Positive integer (default: `100`)
+  """
+  @spec embedding_batch_size() :: pos_integer()
+  def embedding_batch_size do
+    Application.get_env(:pearl, :embedding_batch_size, 100)
+  end
+
+  @doc """
+  Returns the concurrency level for parallel file reading.
+
+  Higher values speed up I/O-bound file reading but increase resource usage.
+  Reads from `Application.get_env(:pearl, :file_read_concurrency)`.
+
+  ## Returns
+  - Positive integer (default: `10`)
+  """
+  @spec file_read_concurrency() :: pos_integer()
+  def file_read_concurrency do
+    Application.get_env(:pearl, :file_read_concurrency, 10)
+  end
 end

@@ -1,6 +1,11 @@
 defmodule Pearl.Providers.Ollama do
   @moduledoc """
   Ollama LLM provider client.
+
+  ## Requirements
+
+  Requires Ollama v0.4.0+ for batch embedding support via the `/api/embed` endpoint.
+  Earlier versions only support single-text embedding via `/api/embeddings`.
   """
 
   @behaviour Pearl.Providers.Provider
@@ -81,30 +86,28 @@ defmodule Pearl.Providers.Ollama do
   end
 
   @impl true
-  def embed(texts) do
-    embeddings =
-      Enum.map(texts, fn text ->
-        case Req.post("#{base_url()}/api/embeddings",
-               json: %{
-                 model: embedding_model(),
-                 prompt: text
-               },
-               receive_timeout: 120_000
-             ) do
-          {:ok, %{status: 200, body: %{"embedding" => embedding}}} ->
-            embedding
+  def embed(texts) when is_list(texts) do
+    # Use batched /api/embed endpoint (Ollama v0.4.0+)
+    # This makes a single API call for all texts instead of N calls
+    body = %{
+      model: embedding_model(),
+      input: texts
+    }
 
-          {:ok, %{status: status, body: body}} ->
-            throw({:error, {:http_error, status, body}})
+    # Increased timeout (5 min) to handle large batches which may take longer
+    case Req.post("#{base_url()}/api/embed",
+           json: body,
+           receive_timeout: 300_000
+         ) do
+      {:ok, %{status: 200, body: %{"embeddings" => embeddings}}} ->
+        {:ok, embeddings}
 
-          {:error, reason} ->
-            throw({:error, reason})
-        end
-      end)
+      {:ok, %{status: status, body: body}} ->
+        {:error, {:http_error, status, body}}
 
-    {:ok, embeddings}
-  catch
-    {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @impl true

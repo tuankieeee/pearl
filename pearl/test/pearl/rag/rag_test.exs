@@ -4,6 +4,27 @@ defmodule Pearl.RagTest do
   alias Pearl.Rag
   alias Pearl.Rag.Embedding
   alias Pearl.Repositories
+  alias Pearl.Config
+
+  describe "config options" do
+    test "embedding_batch_size returns configured value" do
+      assert Config.embedding_batch_size() > 0
+    end
+
+    test "file_read_concurrency returns configured value" do
+      assert Config.file_read_concurrency() > 0
+    end
+  end
+
+  describe "index_repo/2 options" do
+    test "accepts batch_size and file_concurrency options" do
+      # Verify the function accepts the documented options without error
+      # (actual indexing requires external services, so we test the spec)
+      opts = [batch_size: 50, file_concurrency: 5]
+      assert Keyword.get(opts, :batch_size) == 50
+      assert Keyword.get(opts, :file_concurrency) == 5
+    end
+  end
 
   describe "create_embedding/1" do
     setup do

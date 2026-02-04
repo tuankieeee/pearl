@@ -3,6 +3,8 @@ defmodule Pearl.Rag do
   The Rag context handles embeddings and retrieval-augmented generation.
   """
 
+  require Logger
+
   import Ecto.Query
   alias Pearl.Config
   alias Pearl.Repo
@@ -28,35 +30,69 @@ defmodule Pearl.Rag do
     |> Repo.delete_all()
   end
 
-  @spec index_repo(RepoRecord.t()) :: {:ok, non_neg_integer()} | {:error, term()}
-  def index_repo(%RepoRecord{} = repo) do
+  @type index_opts :: [batch_size: pos_integer(), file_concurrency: pos_integer()]
+
+  @spec index_repo(RepoRecord.t(), index_opts()) :: {:ok, non_neg_integer()} | {:error, term()}
+  def index_repo(%RepoRecord{} = repo, opts \\ []) do
+    batch_size = Keyword.get(opts, :batch_size, Config.embedding_batch_size())
+    concurrency = Keyword.get(opts, :file_concurrency, Config.file_read_concurrency())
+
     with {:ok, structure} <- Repositories.get_structure(repo) do
       files = flatten_structure(structure, "")
 
       # Delete existing embeddings first
       delete_embeddings_for_repo(repo.id)
 
-      # Process files in batches
+      # Process files with streaming pipeline:
+      # 1. Read files in parallel (Task.async_stream)
+      # 2. Lazily chunk results (Stream.flat_map)
+      # 3. Batch for embedding API (Stream.chunk_every)
+      # 4. Reduce to count
       count =
         files
-        |> Enum.flat_map(fn file_path ->
-          case Repositories.read_file(repo, file_path) do
-            {:ok, content} -> Chunker.chunk_file(file_path, content)
-            _ -> []
-          end
-        end)
-        |> Enum.chunk_every(20)
-        |> Enum.reduce(0, fn batch, acc ->
-          case embed_and_store_batch(repo.id, batch) do
-            {:ok, n} -> acc + n
-            _ -> acc
-          end
-        end)
+        |> stream_file_chunks(repo, concurrency)
+        |> Stream.chunk_every(batch_size)
+        |> Enum.reduce(0, &process_batch(repo.id, &1, &2))
 
       # Save the embedding model used for this repo
       Repositories.update_repo(repo, %{embedding_model: Config.embedding_model()})
 
       {:ok, count}
+    end
+  end
+
+  defp stream_file_chunks(files, repo, concurrency) do
+    files
+    |> Task.async_stream(
+      fn path -> read_and_chunk_file(repo, path) end,
+      max_concurrency: concurrency,
+      ordered: false,
+      timeout: 30_000,
+      on_timeout: :kill_task
+    )
+    |> Stream.flat_map(fn
+      {:ok, chunks} -> chunks
+      {:exit, reason} ->
+        Logger.warning("File processing failed or timed out: #{inspect(reason)}")
+        []
+    end)
+  end
+
+  defp read_and_chunk_file(repo, file_path) do
+    case Repositories.read_file(repo, file_path) do
+      {:ok, content} -> Chunker.chunk_file(file_path, content)
+      _ -> []
+    end
+  end
+
+  defp process_batch(repo_id, batch, acc) do
+    case embed_and_store_batch(repo_id, batch) do
+      {:ok, n} ->
+        acc + n
+
+      {:error, reason} ->
+        Logger.warning("Batch embedding failed: #{inspect(reason)}")
+        acc
     end
   end
 
