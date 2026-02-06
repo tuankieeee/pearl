@@ -9,7 +9,10 @@ defmodule PearlWeb.WikiLive do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     repo =
-      Repositories.get_repo(id) || raise Ecto.NoResultsError, queryable: Repositories.RepoRecord
+      (case Integer.parse(id) do
+         {int_id, ""} -> Repositories.get_repo(int_id)
+         _ -> nil
+       end) || raise(Ecto.NoResultsError, queryable: Repositories.RepoRecord)
 
     wiki_cache = Wiki.get_cached(repo)
 
@@ -235,7 +238,7 @@ defmodule PearlWeb.WikiLive do
       |> Enum.filter(fn msg -> msg.content != "" end)
       |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
 
-    Task.start(fn ->
+    Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
       case Rag.ask(socket.assigns.repo, question, stream: true, history: history) do
         {:ok, stream} ->
           Enum.each(stream, fn chunk ->

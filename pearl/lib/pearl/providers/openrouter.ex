@@ -43,8 +43,8 @@ defmodule Pearl.Providers.OpenRouter do
       {:ok, %{status: 429}} ->
         {:error, :rate_limited}
 
-      {:ok, %{status: status, body: body}} ->
-        {:error, {:http_error, status, body}}
+      {:ok, %{status: status, body: resp_body}} ->
+        {:error, {:http_error, status, resp_body}}
 
       {:error, reason} ->
         {:error, reason}
@@ -144,8 +144,8 @@ defmodule Pearl.Providers.OpenRouter do
           {:ok, %{status: 401}} ->
             {:error, :invalid_api_key}
 
-          {:ok, %{status: status, body: body}} ->
-            {:error, {:http_error, status, body}}
+          {:ok, %{status: status, body: resp_body}} ->
+            {:error, {:http_error, status, resp_body}}
 
           {:error, reason} ->
             {:error, reason}
@@ -168,8 +168,8 @@ defmodule Pearl.Providers.OpenRouter do
 
             {:ok, chat_models}
 
-          {:ok, %{status: status, body: body}} ->
-            {:error, {:http_error, status, body}}
+          {:ok, %{status: status, body: resp_body}} ->
+            {:error, {:http_error, status, resp_body}}
 
           {:error, reason} ->
             {:error, reason}

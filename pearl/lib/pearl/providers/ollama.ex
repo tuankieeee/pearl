@@ -10,7 +10,7 @@ defmodule Pearl.Providers.Ollama do
 
   @behaviour Pearl.Providers.Provider
 
-  defp base_url do
+  def base_url do
     Application.get_env(:pearl, :providers)[:ollama][:host] ||
       "http://localhost:11434"
   end
@@ -34,8 +34,8 @@ defmodule Pearl.Providers.Ollama do
       {:ok, %{status: 200, body: %{"message" => %{"content" => content}}}} ->
         {:ok, content}
 
-      {:ok, %{status: status, body: body}} ->
-        {:error, {:http_error, status, body}}
+      {:ok, %{status: status, body: resp_body}} ->
+        {:error, {:http_error, status, resp_body}}
 
       {:error, reason} ->
         {:error, reason}
@@ -104,8 +104,8 @@ defmodule Pearl.Providers.Ollama do
       {:ok, %{status: 200, body: %{"embeddings" => embeddings}}} ->
         {:ok, embeddings}
 
-      {:ok, %{status: status, body: body}} ->
-        {:error, {:http_error, status, body}}
+      {:ok, %{status: status, body: resp_body}} ->
+        {:error, {:http_error, status, resp_body}}
 
       {:error, reason} ->
         {:error, reason}
@@ -118,8 +118,8 @@ defmodule Pearl.Providers.Ollama do
       {:ok, %{status: 200, body: %{"models" => models}}} ->
         {:ok, models}
 
-      {:ok, %{status: status, body: body}} ->
-        {:error, {:http_error, status, body}}
+      {:ok, %{status: status, body: resp_body}} ->
+        {:error, {:http_error, status, resp_body}}
 
       {:error, reason} ->
         {:error, reason}

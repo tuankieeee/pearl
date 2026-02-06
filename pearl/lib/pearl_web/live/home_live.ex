@@ -2,6 +2,7 @@ defmodule PearlWeb.HomeLive do
   use PearlWeb, :live_view
 
   alias Pearl.Repositories
+  alias Pearl.Repositories.Git
 
   @impl true
   def mount(_params, _session, socket) do
@@ -178,8 +179,6 @@ defmodule PearlWeb.HomeLive do
 
   @impl true
   def handle_event("generate", %{"repo_url" => url}, socket) do
-    alias Pearl.Repositories.Git
-
     case Git.parse_url(url) do
       {:ok, parsed} ->
         case find_or_create_pending_repo(url, parsed) do
@@ -200,7 +199,7 @@ defmodule PearlWeb.HomeLive do
             repo_id = repo.id
 
             # Fetch metadata in parallel (for instant card display with full info)
-            Task.start(fn ->
+            Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
               case Repositories.fetch_and_save_metadata(repo) do
                 {:ok, updated_repo} -> send(pid, {:metadata_updated, repo_id, updated_repo})
                 _ -> :ok
@@ -208,7 +207,7 @@ defmodule PearlWeb.HomeLive do
             end)
 
             # Main generation task
-            Task.start(fn ->
+            Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
               result = do_generate(repo, fn msg -> send(pid, {:progress, repo_id, msg}) end)
               send(pid, {:generation_complete, repo_id, result})
             end)

@@ -38,7 +38,7 @@ defmodule Pearl.Rag do
     concurrency = Keyword.get(opts, :file_concurrency, Config.file_read_concurrency())
 
     with {:ok, structure} <- Repositories.get_structure(repo) do
-      files = flatten_structure(structure, "")
+      files = Repositories.flatten_structure(structure)
 
       # Delete existing embeddings first
       delete_embeddings_for_repo(repo.id)
@@ -94,16 +94,6 @@ defmodule Pearl.Rag do
         Logger.warning("Batch embedding failed: #{inspect(reason)}")
         acc
     end
-  end
-
-  defp flatten_structure(structure, prefix) do
-    Enum.flat_map(structure, fn
-      {name, :file} ->
-        [Path.join(prefix, name)]
-
-      {name, children} when is_map(children) ->
-        flatten_structure(children, Path.join(prefix, name))
-    end)
   end
 
   defp embed_and_store_batch(repo_id, chunks) do

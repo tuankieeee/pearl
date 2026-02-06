@@ -81,7 +81,7 @@ defmodule Pearl.Wiki.Generator do
   end
 
   defp generate_page(repo, structure, page_spec, provider, model) do
-    all_files = flatten_structure(structure, "")
+    all_files = Repositories.flatten_structure(structure)
 
     page_type = determine_page_type(page_spec)
     keywords = extract_keywords(page_spec)
@@ -229,16 +229,6 @@ defmodule Pearl.Wiki.Generator do
         end
 
       {path, base_score + type_score + keyword_score + importance_score}
-    end)
-  end
-
-  defp flatten_structure(structure, prefix) do
-    Enum.flat_map(structure, fn
-      {name, :file} ->
-        [Path.join(prefix, name)]
-
-      {name, children} when is_map(children) ->
-        flatten_structure(children, Path.join(prefix, name))
     end)
   end
 end

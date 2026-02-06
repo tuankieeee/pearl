@@ -162,8 +162,7 @@ defmodule Pearl.Repositories do
   end
 
   defp fetch_metadata(%RepoRecord{provider: "gitlab", owner: owner, name: name}) do
-    encoded_path = URI.encode("#{owner}/#{name}", &(&1 != ?/))
-    url = "https://gitlab.com/api/v4/projects/#{URI.encode_www_form(encoded_path)}"
+    url = "https://gitlab.com/api/v4/projects/#{URI.encode_www_form("#{owner}/#{name}")}"
     headers = [{"User-Agent", "Pearl-Wiki"}]
 
     case :httpc.request(:get, {String.to_charlist(url), headers}, [], body_format: :binary) do
@@ -216,6 +215,17 @@ defmodule Pearl.Repositories do
     path
     |> Path.dirname()
     |> File.mkdir_p()
+  end
+
+  @spec flatten_structure(map(), String.t()) :: [String.t()]
+  def flatten_structure(structure, prefix \\ "") do
+    Enum.flat_map(structure, fn
+      {name, :file} ->
+        [Path.join(prefix, name)]
+
+      {name, children} when is_map(children) ->
+        flatten_structure(children, Path.join(prefix, name))
+    end)
   end
 
   @spec get_structure(RepoRecord.t()) :: {:ok, map()} | {:error, term()}

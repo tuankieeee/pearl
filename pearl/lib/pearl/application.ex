@@ -14,6 +14,7 @@ defmodule Pearl.Application do
       {Phoenix.PubSub, name: Pearl.PubSub},
       # Start a worker by calling: Pearl.Worker.start_link(arg)
       # {Pearl.Worker, arg},
+      {Task.Supervisor, name: Pearl.TaskSupervisor},
       # Start to serve requests, typically the last entry
       PearlWeb.Endpoint
     ]
