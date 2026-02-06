@@ -225,7 +225,10 @@ defmodule PearlWeb.HomeLive do
   end
 
   def handle_event("request_delete", %{"id" => id}, socket) do
-    {:noreply, assign(socket, confirm_delete_id: String.to_integer(id))}
+    case Integer.parse(id) do
+      {int_id, ""} -> {:noreply, assign(socket, confirm_delete_id: int_id)}
+      _ -> {:noreply, socket}
+    end
   end
 
   def handle_event("cancel_delete", _params, socket) do
@@ -233,30 +236,34 @@ defmodule PearlWeb.HomeLive do
   end
 
   def handle_event("confirm_delete", %{"id" => id}, socket) do
-    repo_id = String.to_integer(id)
-
-    case Repositories.get_repo(repo_id) do
-      nil ->
-        {:noreply,
-         socket |> assign(confirm_delete_id: nil) |> put_flash(:error, "Repository not found")}
-
-      repo ->
-        case Repositories.delete_repo(repo) do
-          {:ok, deleted} ->
+    case Integer.parse(id) do
+      {repo_id, ""} ->
+        case Repositories.get_repo(repo_id) do
+          nil ->
             {:noreply,
-             socket
-             |> assign(
-               repos: Enum.reject(socket.assigns.repos, &(&1.id == repo_id)),
-               confirm_delete_id: nil
-             )
-             |> put_flash(:info, "Deleted #{deleted.owner}/#{deleted.name}")}
+             socket |> assign(confirm_delete_id: nil) |> put_flash(:error, "Repository not found")}
 
-          {:error, _} ->
-            {:noreply,
-             socket
-             |> assign(confirm_delete_id: nil)
-             |> put_flash(:error, "Failed to delete repository")}
+          repo ->
+            case Repositories.delete_repo(repo) do
+              {:ok, deleted} ->
+                {:noreply,
+                 socket
+                 |> assign(
+                   repos: Enum.reject(socket.assigns.repos, &(&1.id == repo_id)),
+                   confirm_delete_id: nil
+                 )
+                 |> put_flash(:info, "Deleted #{deleted.owner}/#{deleted.name}")}
+
+              {:error, _} ->
+                {:noreply,
+                 socket
+                 |> assign(confirm_delete_id: nil)
+                 |> put_flash(:error, "Failed to delete repository")}
+            end
         end
+
+      _ ->
+        {:noreply, assign(socket, confirm_delete_id: nil)}
     end
   end
 

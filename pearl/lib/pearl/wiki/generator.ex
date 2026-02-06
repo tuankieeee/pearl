@@ -29,7 +29,7 @@ defmodule Pearl.Wiki.Generator do
          _ <- broadcast_progress.("Analyzing repository structure..."),
          {:ok, wiki_structure} <- generate_structure(structure, provider, model),
          _ <- broadcast_progress.("Generating #{length(wiki_structure["pages"])} pages..."),
-         {:ok, pages} <- generate_pages(repo, wiki_structure, provider, model, broadcast_progress) do
+         {:ok, pages} <- generate_pages(repo, structure, wiki_structure, provider, model, broadcast_progress) do
       Phoenix.PubSub.broadcast(Pearl.PubSub, "wiki:#{repo.id}", {:complete, wiki_structure})
       {:ok, %{structure: wiki_structure, pages: pages, model_used: "#{provider}/#{model}"}}
     end
@@ -60,7 +60,7 @@ defmodule Pearl.Wiki.Generator do
     end
   end
 
-  defp generate_pages(repo, wiki_structure, provider, model, on_progress) do
+  defp generate_pages(repo, structure, wiki_structure, provider, model, on_progress) do
     pages =
       wiki_structure["pages"]
       |> Enum.with_index(1)
@@ -71,7 +71,7 @@ defmodule Pearl.Wiki.Generator do
           "Generating page #{index}/#{length(wiki_structure["pages"])}: #{page_spec["title"]}..."
         )
 
-        case generate_page(repo, page_spec, provider, model) do
+        case generate_page(repo, structure, page_spec, provider, model) do
           {:ok, content} -> Map.put(acc, page_id, content)
           _ -> acc
         end
@@ -80,8 +80,7 @@ defmodule Pearl.Wiki.Generator do
     {:ok, pages}
   end
 
-  defp generate_page(repo, page_spec, provider, model) do
-    {:ok, structure} = Repositories.get_structure(repo)
+  defp generate_page(repo, structure, page_spec, provider, model) do
     all_files = flatten_structure(structure, "")
 
     page_type = determine_page_type(page_spec)

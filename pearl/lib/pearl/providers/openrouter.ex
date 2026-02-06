@@ -63,16 +63,18 @@ defmodule Pearl.Providers.OpenRouter do
   end
 
   defp start_stream(body, key) do
-    {:ok, resp} =
-      Req.post("#{@base_url}/chat/completions",
-        json: body,
-        headers: headers(key),
-        into: :self,
-        receive_timeout: 60_000
-      )
-
-    resp
+    case Req.post("#{@base_url}/chat/completions",
+           json: body,
+           headers: headers(key),
+           into: :self,
+           receive_timeout: 60_000
+         ) do
+      {:ok, resp} -> resp
+      {:error, _reason} -> :error
+    end
   end
+
+  defp next_chunk(:error), do: {:halt, :error}
 
   defp next_chunk(%Req.Response{} = resp) do
     receive do

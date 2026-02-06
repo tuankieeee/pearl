@@ -70,12 +70,12 @@ defmodule Pearl.Repositories do
     with {:ok, parsed} <- Git.parse_url(url),
          {:ok, repo} <- find_or_create_repo(url, parsed),
          {:ok, repo} <- update_status(repo, "cloning"),
-         metadata <- fetch_metadata(repo),
-         target_path <- repo_path(repo),
+         target_path = repo_path(repo),
+         metadata = fetch_metadata(repo),
          :ok <- ensure_parent_dir(target_path),
          {:ok, _} <- Git.clone(url, target_path, opts),
          {:ok, files} <- Git.list_files(target_path),
-         attrs <-
+         attrs =
            Map.merge(metadata, %{
              local_path: target_path,
              file_count: length(files),
@@ -96,12 +96,12 @@ defmodule Pearl.Repositories do
   @spec clone_existing(RepoRecord.t(), keyword()) :: {:ok, RepoRecord.t()} | {:error, term()}
   def clone_existing(%RepoRecord{} = repo, opts \\ []) do
     with {:ok, repo} <- update_status(repo, "cloning"),
-         target_path <- repo_path(repo),
+         target_path = repo_path(repo),
          :ok <- ensure_parent_dir(target_path),
          :ok <- maybe_remove_existing(target_path),
          {:ok, _} <- Git.clone(repo.url, target_path, opts),
          {:ok, files} <- Git.list_files(target_path),
-         attrs <- %{
+         attrs = %{
            local_path: target_path,
            file_count: length(files),
            status: "ready"

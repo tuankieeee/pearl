@@ -1,4 +1,8 @@
 defmodule Pearl.Wiki.WikiCache do
+  @moduledoc """
+  Ecto schema for caching generated wiki content.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

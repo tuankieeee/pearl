@@ -1,4 +1,8 @@
 defmodule Pearl.Rag.Embedding do
+  @moduledoc """
+  Ecto schema for vector embeddings used in RAG similarity search.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

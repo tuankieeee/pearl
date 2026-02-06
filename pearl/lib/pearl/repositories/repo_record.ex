@@ -1,4 +1,8 @@
 defmodule Pearl.Repositories.RepoRecord do
+  @moduledoc """
+  Ecto schema for repository metadata and status tracking.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

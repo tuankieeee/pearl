@@ -10,7 +10,7 @@ defmodule Pearl.Providers.Ollama do
 
   @behaviour Pearl.Providers.Provider
 
-  def base_url do
+  defp base_url do
     Application.get_env(:pearl, :providers)[:ollama][:host] ||
       "http://localhost:11434"
   end
@@ -54,15 +54,17 @@ defmodule Pearl.Providers.Ollama do
   end
 
   defp start_stream(body) do
-    {:ok, resp} =
-      Req.post("#{base_url()}/api/chat",
-        json: body,
-        into: :self,
-        receive_timeout: 60_000
-      )
-
-    resp
+    case Req.post("#{base_url()}/api/chat",
+           json: body,
+           into: :self,
+           receive_timeout: 60_000
+         ) do
+      {:ok, resp} -> resp
+      {:error, _reason} -> :error
+    end
   end
+
+  defp next_chunk(:error), do: {:halt, :error}
 
   defp next_chunk(%Req.Response{} = resp) do
     receive do

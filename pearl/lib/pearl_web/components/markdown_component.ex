@@ -10,10 +10,19 @@ defmodule PearlWeb.MarkdownComponent do
   @spec render_markdown(String.t()) :: String.t()
   def render_markdown(markdown) when is_binary(markdown) do
     markdown
+    |> sanitize_input()
     |> Earmark.as_html!(code_class_prefix: "language-")
   end
 
   def render_markdown(_), do: ""
+
+  defp sanitize_input(markdown) do
+    markdown
+    |> String.replace(~r/<script[^>]*>.*?<\/script>/is, "")
+    |> String.replace(~r/<iframe[^>]*>.*?<\/iframe>/is, "")
+    |> String.replace(~r/<style[^>]*>.*?<\/style>/is, "")
+    |> String.replace(~r/\s+on\w+\s*=/i, " data-removed=")
+  end
 
   @spec extract_mermaid(String.t()) :: {String.t(), [String.t()]}
   def extract_mermaid(markdown) do
