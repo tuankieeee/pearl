@@ -199,22 +199,30 @@ defmodule PearlWeb.HomeLive do
             repo_id = repo.id
 
             # Fetch metadata in parallel (for instant card display with full info)
-            # Task communicates via send/2 - no need to track reference
+            # Linked to LiveView - terminates if user navigates away
             {:ok, _pid} =
-              Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
-                case Repositories.fetch_and_save_metadata(repo) do
-                  {:ok, updated_repo} -> send(pid, {:metadata_updated, repo_id, updated_repo})
-                  _ -> :ok
-                end
-              end)
+              Task.Supervisor.start_child(
+                Pearl.TaskSupervisor,
+                fn ->
+                  case Repositories.fetch_and_save_metadata(repo) do
+                    {:ok, updated_repo} -> send(pid, {:metadata_updated, repo_id, updated_repo})
+                    _ -> :ok
+                  end
+                end,
+                link: true
+              )
 
             # Main generation task
-            # Task communicates via send/2 - no need to track reference
+            # Linked to LiveView - terminates if user navigates away
             {:ok, _pid} =
-              Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
-                result = do_generate(repo, fn msg -> send(pid, {:progress, repo_id, msg}) end)
-                send(pid, {:generation_complete, repo_id, result})
-              end)
+              Task.Supervisor.start_child(
+                Pearl.TaskSupervisor,
+                fn ->
+                  result = do_generate(repo, fn msg -> send(pid, {:progress, repo_id, msg}) end)
+                  send(pid, {:generation_complete, repo_id, result})
+                end,
+                link: true
+              )
 
             {:noreply, socket}
 

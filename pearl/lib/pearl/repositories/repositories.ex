@@ -3,6 +3,8 @@ defmodule Pearl.Repositories do
   The Repositories context handles git repository cloning and analysis.
   """
 
+  require Logger
+
   import Ecto.Query
   alias Pearl.Repo
   alias Pearl.Repositories.{Git, RepoRecord}
@@ -152,11 +154,17 @@ defmodule Pearl.Repositories do
               pushed_at: parse_datetime(data["pushed_at"])
             }
 
-          _ ->
+          {:error, reason} ->
+            Logger.warning("Failed to decode GitHub API response for #{owner}/#{name}: #{inspect(reason)}")
             %{}
         end
 
-      _ ->
+      {:ok, {{_, status, _}, _, body}} ->
+        Logger.warning("GitHub API returned #{status} for #{owner}/#{name}: #{inspect(body)}")
+        %{}
+
+      {:error, reason} ->
+        Logger.warning("GitHub API request failed for #{owner}/#{name}: #{inspect(reason)}")
         %{}
     end
   end
@@ -176,11 +184,17 @@ defmodule Pearl.Repositories do
               pushed_at: parse_datetime(data["last_activity_at"])
             }
 
-          _ ->
+          {:error, reason} ->
+            Logger.warning("Failed to decode GitLab API response for #{owner}/#{name}: #{inspect(reason)}")
             %{}
         end
 
-      _ ->
+      {:ok, {{_, status, _}, _, body}} ->
+        Logger.warning("GitLab API returned #{status} for #{owner}/#{name}: #{inspect(body)}")
+        %{}
+
+      {:error, reason} ->
+        Logger.warning("GitLab API request failed for #{owner}/#{name}: #{inspect(reason)}")
         %{}
     end
   end

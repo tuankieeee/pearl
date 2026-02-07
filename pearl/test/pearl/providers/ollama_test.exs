@@ -1,5 +1,13 @@
 defmodule Pearl.Providers.OllamaTest do
-  use ExUnit.Case, async: true
+  @moduledoc """
+  Integration tests for the Ollama provider.
+
+  Tests tagged with :external require a running Ollama server and are
+  excluded by default (see test_helper.exs). Run with:
+
+      mix test --include external
+  """
+  use ExUnit.Case, async: false
 
   alias Pearl.Providers.Ollama
 

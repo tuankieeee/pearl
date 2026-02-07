@@ -6,6 +6,7 @@ defmodule Pearl.Rag.Chunker do
   @default_max_tokens 500
   @chars_per_token 4
 
+  @typedoc "A chunk of text prepared for embedding with its position and metadata."
   defstruct [:content, :index, :token_count, :file_path]
 
   @type t :: %__MODULE__{

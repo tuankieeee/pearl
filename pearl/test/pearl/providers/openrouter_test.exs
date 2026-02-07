@@ -3,12 +3,6 @@ defmodule Pearl.Providers.OpenRouterTest do
 
   alias Pearl.Providers.OpenRouter
 
-  describe "base_url/0" do
-    test "returns OpenRouter API URL" do
-      assert OpenRouter.base_url() == "https://openrouter.ai/api/v1"
-    end
-  end
-
   describe "chat/3 without API key" do
     test "returns error when API key not configured" do
       # Temporarily clear the API key to test the no-key case

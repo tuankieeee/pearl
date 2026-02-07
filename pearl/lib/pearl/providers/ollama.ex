@@ -13,6 +13,7 @@ defmodule Pearl.Providers.Ollama do
   @doc """
   Returns the Ollama API base URL from configuration or defaults to localhost.
   """
+  @spec base_url() :: String.t()
   def base_url do
     Application.get_env(:pearl, :providers)[:ollama][:host] ||
       "http://localhost:11434"

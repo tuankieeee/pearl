@@ -5,7 +5,7 @@ defmodule PearlWeb.MarkdownComponent do
 
   use Phoenix.Component
 
-  @mermaid_regex ~r/```mermaid\n([\s\S]*?)```/
+  @mermaid_regex ~r/```mermaid\n(?<content>[\s\S]*?)```/
   @mermaid_placeholder "MERMAID_BLOCK_PLACEHOLDER"
 
   @spec render_markdown(String.t()) :: String.t()
@@ -19,7 +19,9 @@ defmodule PearlWeb.MarkdownComponent do
 
   @spec extract_mermaid(String.t()) :: {String.t(), [String.t()]}
   def extract_mermaid(markdown) do
-    mermaid_blocks = Regex.scan(@mermaid_regex, markdown) |> Enum.map(&Enum.at(&1, 1))
+    mermaid_blocks =
+      Regex.scan(@mermaid_regex, markdown, capture: :all_names)
+      |> Enum.map(fn [content] -> content end)
 
     html =
       markdown

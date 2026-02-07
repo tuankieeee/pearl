@@ -174,8 +174,6 @@ defmodule Pearl.Wiki.Generator do
       filename = Path.basename(path)
       path_lower = String.downcase(path)
 
-      base_score = 0
-
       # Score based on page type
       type_score =
         case page_type do
@@ -229,7 +227,7 @@ defmodule Pearl.Wiki.Generator do
           true -> 0
         end
 
-      {path, base_score + type_score + keyword_score + importance_score}
+      {path, type_score + keyword_score + importance_score}
     end)
   end
 end

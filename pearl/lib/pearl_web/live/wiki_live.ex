@@ -215,46 +215,57 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_event("ask", %{"question" => question}, socket) when question != "" do
-    # Add user message and placeholder assistant message
-    messages =
-      socket.assigns.ask_messages ++
-        [
-          %{role: "user", content: question},
-          %{role: "assistant", content: ""}
-        ]
-
-    socket =
-      assign(socket,
-        ask_loading: true,
-        ask_streaming: false,
-        ask_messages: messages,
-        ask_current_input: ""
-      )
-
-    pid = self()
+    # Verify user still has access to the repository
     repo = socket.assigns.repo
 
-    # Get history (all messages except the last empty assistant placeholder)
-    history =
-      socket.assigns.ask_messages
-      |> Enum.filter(fn msg -> msg.content != "" end)
-      |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
+    case Repositories.get_repo(repo.id) do
+      nil ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Repository no longer exists")
+         |> push_navigate(to: ~p"/")}
 
-    Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
-      case Rag.ask(repo, question, stream: true, history: history) do
-        {:ok, stream} ->
-          Enum.each(stream, fn chunk ->
-            send(pid, {:answer_chunk, chunk})
-          end)
+      _repo ->
+        # Add user message and placeholder assistant message
+        messages =
+          socket.assigns.ask_messages ++
+            [
+              %{role: "user", content: question},
+              %{role: "assistant", content: ""}
+            ]
 
-          send(pid, :answer_complete)
+        socket =
+          assign(socket,
+            ask_loading: true,
+            ask_streaming: false,
+            ask_messages: messages,
+            ask_current_input: ""
+          )
 
-        {:error, reason} ->
-          send(pid, {:answer_error, reason})
-      end
-    end)
+        pid = self()
 
-    {:noreply, socket}
+        # Get history (all messages except the last empty assistant placeholder)
+        history =
+          socket.assigns.ask_messages
+          |> Enum.filter(fn msg -> msg.content != "" end)
+          |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
+
+        Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
+          case Rag.ask(repo, question, stream: true, history: history) do
+            {:ok, stream} ->
+              Enum.each(stream, fn chunk ->
+                send(pid, {:answer_chunk, chunk})
+              end)
+
+              send(pid, :answer_complete)
+
+            {:error, reason} ->
+              send(pid, {:answer_error, reason})
+          end
+        end)
+
+        {:noreply, socket}
+    end
   end
 
   def handle_event("ask", _params, socket) do
