@@ -11,6 +11,9 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
+    # Trap exits from linked tasks (RAG streaming)
+    Process.flag(:trap_exit, true)
+
     with {int_id, ""} <- Integer.parse(id),
          %{} = repo <- Repositories.get_repo(int_id) do
       wiki_cache = Wiki.get_cached(repo)
@@ -281,7 +284,7 @@ defmodule PearlWeb.WikiLive do
               send(pid, {:answer_error, reason})
           end
         end,
-        link: true
+        [link: true]
       )
 
     {:noreply, socket}
@@ -338,6 +341,18 @@ defmodule PearlWeb.WikiLive do
      socket
      |> assign(ask_loading: false, ask_messages: updated_messages)
      |> push_event("focus-input", %{})}
+  end
+
+  @impl true
+  def handle_info({:EXIT, _pid, :normal}, socket) do
+    # Linked task completed normally
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:EXIT, _pid, _reason}, socket) do
+    # Linked task crashed - reset loading state
+    {:noreply, assign(socket, ask_loading: false)}
   end
 
   defp get_page_content(nil, _), do: ""

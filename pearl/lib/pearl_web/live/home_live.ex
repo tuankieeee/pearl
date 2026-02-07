@@ -235,7 +235,7 @@ defmodule PearlWeb.HomeLive do
                     _ -> :ok
                   end
                 end,
-                link: true
+                [link: true]
               )
 
             # Main generation task
@@ -248,7 +248,7 @@ defmodule PearlWeb.HomeLive do
                   result = do_generate(repo, fn msg -> send(pid, {:progress, repo_id, msg}) end)
                   send(pid, {:generation_complete, repo_id, result})
                 end,
-                link: true
+                [link: true]
               )
 
             case generation_result do
@@ -392,6 +392,8 @@ defmodule PearlWeb.HomeLive do
      )}
   end
 
+  # Dialyzer reports this as unreachable - false positive due to closure usage in Task.async
+  @dialyzer {:nowarn_function, do_generate: 2}
   defp do_generate(%Pearl.Repositories.RepoRecord{id: repo_id} = repo, on_progress) do
     on_progress.("Cloning repository...")
 
