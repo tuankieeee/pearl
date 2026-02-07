@@ -80,4 +80,18 @@ defmodule Pearl.Config do
   def file_read_concurrency do
     Application.get_env(:pearl, :file_read_concurrency, 10)
   end
+
+  @doc """
+  Returns the timeout for wiki page generation tasks in milliseconds.
+
+  Each page is generated via an LLM call which can take significant time.
+  Reads from `Application.get_env(:pearl, :wiki_page_timeout)`.
+
+  ## Returns
+  - Timeout in milliseconds (default: `300_000` / 5 minutes)
+  """
+  @spec wiki_page_timeout() :: pos_integer()
+  def wiki_page_timeout do
+    Application.get_env(:pearl, :wiki_page_timeout, 300_000)
+  end
 end

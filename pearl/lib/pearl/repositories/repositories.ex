@@ -265,12 +265,13 @@ defmodule Pearl.Repositories do
     repo_root = Path.expand(repo_path)
     full_path = Path.expand(file_path, repo_root)
 
-    with true <- String.starts_with?(full_path, repo_root <> "/"),
+    with {false, _} <- {".." in Path.split(file_path), :path_traversal},
+         {true, _} <- {String.starts_with?(full_path, repo_root <> "/"), :path_traversal},
          {:ok, info} <- File.lstat(full_path),
-         true <- info.type != :symlink do
+         {false, _} <- {info.type == :symlink, :symlink_rejected} do
       File.read(full_path)
     else
-      false -> {:error, :path_traversal}
+      {_bool, reason} when is_atom(reason) -> {:error, reason}
       {:error, reason} -> {:error, reason}
     end
   end

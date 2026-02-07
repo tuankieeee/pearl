@@ -56,7 +56,7 @@ defmodule Pearl.Wiki.Prompts do
       %{
         role: "assistant",
         content:
-          ~s({"pages": [{"id": "overview", "title": "Overview", "description": "Project overview and purpose"}, {"id": "getting-started", "title": "Getting Started", "description": "Installation and setup"}, {"id": "architecture", "title": "Architecture", "description": "Code structure and design"}]})
+          ~s({"pages": [{"id": "overview", "title": "Overview", "description": "Project overview and purpose"}, {"id": "getting-started", "title": "Getting Started", "description": "Installation and setup"}, {"id": "architecture", "title": "Architecture", "description": "Code structure and design"}, {"id": "api-reference", "title": "API Reference", "description": "Public API endpoints and usage"}, {"id": "data-models", "title": "Data Models", "description": "Database schemas and relationships"}, {"id": "authentication", "title": "Authentication", "description": "Auth flows and security"}, {"id": "configuration", "title": "Configuration", "description": "Environment and runtime settings"}, {"id": "testing", "title": "Testing", "description": "Test organization and running tests"}]})
       },
       %{
         role: "user",
@@ -69,6 +69,7 @@ defmodule Pearl.Wiki.Prompts do
     ]
   end
 
+  @doc "Builds an LLM prompt for generating a single wiki page from file contents."
   @spec page_prompt(map(), [{String.t(), String.t()}]) :: [map()]
   def page_prompt(page_spec, file_contents) do
     page_prompt(page_spec, file_contents, :default)

@@ -16,6 +16,7 @@ defmodule Pearl.Rag do
   # Max characters for history (leaves room for system prompt + RAG context + current question)
   @max_history_chars 8_000
 
+  @doc "Creates a new embedding record in the database."
   @spec create_embedding(map()) :: {:ok, Embedding.t()} | {:error, Ecto.Changeset.t()}
   def create_embedding(attrs) do
     %Embedding{}
@@ -23,6 +24,7 @@ defmodule Pearl.Rag do
     |> Repo.insert()
   end
 
+  @doc "Deletes all embedding records for the given repository."
   @spec delete_embeddings_for_repo(integer()) :: {non_neg_integer(), nil}
   def delete_embeddings_for_repo(repo_id) do
     Embedding
@@ -30,8 +32,14 @@ defmodule Pearl.Rag do
     |> Repo.delete_all()
   end
 
-  @type index_opts :: [batch_size: pos_integer(), file_concurrency: pos_integer()]
+  @typep index_opts :: [batch_size: pos_integer(), file_concurrency: pos_integer()]
 
+  @doc """
+  Indexes a repository by chunking its files and generating vector embeddings.
+
+  Reads all tracked files, splits them into chunks, embeds them in batches,
+  and stores the results in the database for later similarity search.
+  """
   @spec index_repo(RepoRecord.t(), index_opts()) :: {:ok, non_neg_integer()} | {:error, term()}
   def index_repo(%RepoRecord{} = repo, opts \\ []) do
     batch_size = Keyword.get(opts, :batch_size, Config.embedding_batch_size())
@@ -125,6 +133,7 @@ defmodule Pearl.Rag do
     end
   end
 
+  @doc "Searches for the most similar embeddings to `query_vector` using pgvector cosine distance."
   @spec search(integer(), [float()], integer()) :: [Embedding.t()]
   def search(repo_id, query_vector, limit \\ 5) do
     Embedding
@@ -134,6 +143,13 @@ defmodule Pearl.Rag do
     |> Repo.all()
   end
 
+  @doc """
+  Asks a question about a repository using RAG.
+
+  Embeds the question, retrieves similar code chunks via pgvector,
+  and streams an LLM response grounded in the retrieved context.
+  Supports conversation history via the `:history` option.
+  """
   @spec ask(RepoRecord.t(), String.t(), keyword()) ::
           {:ok, String.t() | Enumerable.t()} | {:error, term()}
   def ask(%RepoRecord{} = repo, question, opts \\ []) do

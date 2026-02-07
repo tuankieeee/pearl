@@ -1,5 +1,10 @@
 defmodule PearlWeb.WikiLive do
+  @moduledoc """
+  LiveView for displaying generated wikis with RAG-powered Q&A chat panel.
+  """
   use PearlWeb, :live_view
+
+  require Logger
 
   alias Pearl.Repositories
   alias Pearl.Wiki
@@ -8,34 +13,32 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    repo =
-      case Integer.parse(id) do
-        {int_id, ""} ->
-          Repositories.get_repo(int_id) ||
-            raise(Ecto.NoResultsError, queryable: Repositories.RepoRecord)
+    # Trap exits from linked tasks (RAG streaming)
+    Process.flag(:trap_exit, true)
 
-        _ ->
-          raise Ecto.NoResultsError, queryable: Repositories.RepoRecord
-      end
+    with {int_id, ""} <- Integer.parse(id),
+         %{} = repo <- Repositories.get_repo(int_id) do
+      wiki_cache = Wiki.get_cached(repo)
 
-    wiki_cache = Wiki.get_cached(repo)
+      pages = if wiki_cache, do: wiki_cache.structure["pages"] || [], else: []
+      current_page_id = if length(pages) > 0, do: hd(pages)["id"], else: nil
 
-    pages = if wiki_cache, do: wiki_cache.structure["pages"] || [], else: []
-    current_page_id = if length(pages) > 0, do: hd(pages)["id"], else: nil
-
-    {:ok,
-     assign(socket,
-       page_title: "#{repo.owner}/#{repo.name} - Pearl",
-       repo: repo,
-       wiki_cache: wiki_cache,
-       pages: pages,
-       current_page_id: current_page_id,
-       current_content: get_page_content(wiki_cache, current_page_id),
-       ask_open: false,
-       ask_messages: [],
-       ask_current_input: "",
-       ask_loading: false
-     )}
+      {:ok,
+       assign(socket,
+         page_title: "#{repo.owner}/#{repo.name} - Pearl",
+         repo: repo,
+         wiki_cache: wiki_cache,
+         pages: pages,
+         current_page_id: current_page_id,
+         current_content: get_page_content(wiki_cache, current_page_id),
+         ask_open: false,
+         ask_messages: [],
+         ask_current_input: "",
+         ask_loading: false
+       )}
+    else
+      _ -> raise Ecto.NoResultsError, queryable: Repositories.RepoRecord
+    end
   end
 
   @impl true
@@ -97,41 +100,48 @@ defmodule PearlWeb.WikiLive do
           
     <!-- Ask panel (slide-out) -->
           <%= if @ask_open do %>
-            <aside class="w-96 bg-base-100 border-l border-base-300 flex flex-col">
-              <div class="p-4 border-b border-base-300 flex items-center justify-between">
-                <h3 class="font-semibold">Ask about the codebase</h3>
-                <button phx-click="toggle_ask" class="btn btn-ghost btn-sm btn-circle">
-                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+            <aside class="w-[36rem] bg-gradient-to-b from-base-100 to-base-200 border-l border-base-300/50 flex flex-col">
+              <div class="px-5 py-4 border-b border-primary/20 bg-gradient-to-r from-primary/5 to-transparent flex items-center justify-between">
+                <h3 class="text-sm font-semibold tracking-wide uppercase text-primary/80 font-[family-name:var(--font-heading)]">
+                  Ask about the codebase
+                </h3>
+                <button
+                  phx-click="toggle_ask"
+                  class="btn btn-ghost btn-sm btn-circle text-base-content/50 hover:text-base-content"
+                >
+                  <.icon name="hero-x-mark" class="size-4" />
                 </button>
               </div>
 
-              <div class="flex-1 overflow-y-auto p-4" id="ask-messages" phx-hook="ScrollToBottom">
+              <div class="flex-1 overflow-y-auto p-5" id="ask-messages" phx-hook="ScrollToBottom">
+                <%= if @ask_messages == [] do %>
+                  <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                      <.icon
+                        name="hero-chat-bubble-left-right"
+                        class="size-12 text-primary/20 mx-auto mb-4"
+                      />
+                      <p class="text-base-content/30 text-sm">Ask anything about the codebase</p>
+                    </div>
+                  </div>
+                <% end %>
                 <%= for {message, idx} <- Enum.with_index(@ask_messages) do %>
                   <%= if message.role == :user do %>
-                    <!-- User message: right-aligned, primary color -->
-                    <div class="chat chat-end">
+                    <div class="chat chat-end mb-4">
                       <div class="chat-bubble chat-bubble-primary">
                         {message.content}
                       </div>
                     </div>
                   <% else %>
-                    <!-- Assistant message: left-aligned, default color -->
-                    <div class="chat chat-start">
-                      <div class="chat-bubble">
+                    <div class="mb-4">
+                      <div class="rounded-lg bg-base-300/50 border-l-2 border-primary/40 px-4 py-3">
                         <%= if message.content == "" and @ask_loading do %>
-                          <span class="loading loading-dots loading-sm"></span>
+                          <span class="loading loading-dots loading-sm text-primary/60"></span>
                         <% else %>
                           <MarkdownComponent.markdown
                             id={"ask-msg-#{idx}"}
                             content={message.content}
-                            class="prose-sm"
+                            class="prose-sm [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_code]:text-xs"
                           />
                         <% end %>
                       </div>
@@ -140,22 +150,24 @@ defmodule PearlWeb.WikiLive do
                 <% end %>
               </div>
 
-              <div class="p-4 border-t border-base-300">
-                <form phx-submit="ask" class="flex gap-2">
+              <div class="p-4 border-t border-primary/20 bg-base-200/50">
+                <form phx-submit="ask" class="flex gap-3 items-center">
                   <input
                     type="text"
                     name="question"
                     value={@ask_current_input}
-                    placeholder="Ask a question..."
-                    class="input input-bordered input-sm flex-1"
+                    placeholder="Ask anything about this codebase..."
+                    id="ask-input"
+                    class="input input-bordered flex-1 bg-base-300/50 focus:border-primary/50"
                     disabled={@ask_loading}
                     phx-debounce="300"
+                    phx-hook="AutoFocus"
                   />
-                  <button type="submit" disabled={@ask_loading} class="btn btn-primary btn-sm">
+                  <button type="submit" disabled={@ask_loading} class="btn btn-primary btn-circle">
                     <%= if @ask_loading do %>
-                      <span class="loading loading-spinner loading-xs"></span>
+                      <span class="loading loading-spinner loading-sm"></span>
                     <% else %>
-                      Ask
+                      <.icon name="hero-paper-airplane" class="size-5" />
                     <% end %>
                   </button>
                 </form>
@@ -195,8 +207,15 @@ defmodule PearlWeb.WikiLive do
           </nav>
 
           <div class="p-4 border-t border-base-300">
-            <button phx-click="toggle_ask" class="btn btn-primary btn-sm w-full">
-              Ask a Question
+            <button
+              phx-click="toggle_ask"
+              class="btn btn-ghost btn-sm w-full gap-2 text-base-content/60 hover:text-base-content"
+            >
+              <%= if @ask_open do %>
+                <.icon name="hero-x-mark" class="size-4" /> Close Chat
+              <% else %>
+                <.icon name="hero-chat-bubble-left-right" class="size-4" /> Chat with AI
+              <% end %>
             </button>
           </div>
         </aside>
@@ -223,8 +242,15 @@ defmodule PearlWeb.WikiLive do
   end
 
   @impl true
-  def handle_event("ask", %{"question" => question}, socket) when question != "" do
+  def handle_event("ask", %{"question" => question}, socket)
+      when is_binary(question) and question != "" do
     %{repo: repo} = socket.assigns
+
+    # Capture history before appending the current question to avoid duplication
+    history =
+      for msg <- socket.assigns.ask_messages, msg.content != "" do
+        %{role: msg.role, content: msg.content}
+      end
 
     # Add user message and placeholder assistant message
     messages =
@@ -243,14 +269,8 @@ defmodule PearlWeb.WikiLive do
 
     pid = self()
 
-    # Get history (all messages except the last empty assistant placeholder)
-    history =
-      socket.assigns.ask_messages
-      |> Enum.filter(fn msg -> msg.content != "" end)
-      |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
-
     # Linked to LiveView - terminates if user navigates away
-    _ignore =
+    _ =
       Task.Supervisor.start_child(
         Pearl.TaskSupervisor,
         fn ->
@@ -298,7 +318,10 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_info(:answer_complete, socket) do
-    {:noreply, assign(socket, ask_loading: false)}
+    {:noreply,
+     socket
+     |> assign(ask_loading: false)
+     |> push_event("focus-input", %{})}
   end
 
   @impl true
@@ -317,10 +340,36 @@ defmodule PearlWeb.WikiLive do
       end
 
     {:noreply,
-     assign(socket,
-       ask_loading: false,
-       ask_messages: updated_messages
-     )}
+     socket
+     |> assign(ask_loading: false, ask_messages: updated_messages)
+     |> push_event("focus-input", %{})}
+  end
+
+  @impl true
+  def handle_info({:EXIT, _pid, :normal}, socket) do
+    # Linked task completed normally
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:EXIT, pid, reason}, socket) do
+    Logger.error("Linked task #{inspect(pid)} crashed: #{inspect(reason)}")
+
+    messages = socket.assigns.ask_messages
+
+    updated_messages =
+      case Enum.split(messages, -1) do
+        {init, [%{role: :assistant} = last]} ->
+          init ++ [%{last | content: last.content <> "\n\n_(Response interrupted)_"}]
+
+        _ ->
+          messages
+      end
+
+    {:noreply,
+     socket
+     |> assign(ask_loading: false, ask_messages: updated_messages)
+     |> push_event("focus-input", %{})}
   end
 
   defp get_page_content(nil, _), do: ""

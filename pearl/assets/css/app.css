@@ -10,9 +10,83 @@
 /* Typography for prose/markdown */
 @plugin "@tailwindcss/typography";
 
-/* daisyUI with retro (light) and luxury (dark) themes */
+/* daisyUI with luxury (dark) theme only */
 @plugin "daisyui" {
-  themes: retro --default, luxury --prefersdark;
+  themes: luxury --default;
+}
+
+/* Self-hosted fonts: Space Grotesk (headings) + DM Sans (body) + JetBrains Mono (code) */
+
+/* DM Sans - latin */
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/dm-sans-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* DM Sans - latin-ext */
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/dm-sans-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* JetBrains Mono - latin */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url(/fonts/jetbrains-mono-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* JetBrains Mono - latin-ext */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url(/fonts/jetbrains-mono-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Space Grotesk - latin */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/space-grotesk-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* Space Grotesk - latin-ext */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/space-grotesk-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Apply heading font to all headings and code font to code elements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
 }
 
 /* LiveView loading states */
@@ -22,85 +96,6 @@
 
 /* LiveView wrapper transparency */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
-
-/* Highlight.js - GitHub Light theme for retro */
-[data-theme="retro"] .hljs {
-  color: #24292e;
-  background: #f6f8fa;
-}
-[data-theme="retro"] .hljs-doctag,
-[data-theme="retro"] .hljs-keyword,
-[data-theme="retro"] .hljs-meta .hljs-keyword,
-[data-theme="retro"] .hljs-template-tag,
-[data-theme="retro"] .hljs-template-variable,
-[data-theme="retro"] .hljs-type,
-[data-theme="retro"] .hljs-variable.language_ {
-  color: #d73a49;
-}
-[data-theme="retro"] .hljs-title,
-[data-theme="retro"] .hljs-title.class_,
-[data-theme="retro"] .hljs-title.class_.inherited__,
-[data-theme="retro"] .hljs-title.function_ {
-  color: #6f42c1;
-}
-[data-theme="retro"] .hljs-attr,
-[data-theme="retro"] .hljs-attribute,
-[data-theme="retro"] .hljs-literal,
-[data-theme="retro"] .hljs-meta,
-[data-theme="retro"] .hljs-number,
-[data-theme="retro"] .hljs-operator,
-[data-theme="retro"] .hljs-selector-attr,
-[data-theme="retro"] .hljs-selector-class,
-[data-theme="retro"] .hljs-selector-id,
-[data-theme="retro"] .hljs-variable {
-  color: #005cc5;
-}
-[data-theme="retro"] .hljs-string,
-[data-theme="retro"] .hljs-meta .hljs-string,
-[data-theme="retro"] .hljs-regexp {
-  color: #032f62;
-}
-[data-theme="retro"] .hljs-built_in,
-[data-theme="retro"] .hljs-symbol {
-  color: #e36209;
-}
-[data-theme="retro"] .hljs-code,
-[data-theme="retro"] .hljs-comment,
-[data-theme="retro"] .hljs-formula {
-  color: #6a737d;
-}
-[data-theme="retro"] .hljs-name,
-[data-theme="retro"] .hljs-quote,
-[data-theme="retro"] .hljs-selector-pseudo,
-[data-theme="retro"] .hljs-selector-tag {
-  color: #22863a;
-}
-[data-theme="retro"] .hljs-subst {
-  color: #24292e;
-}
-[data-theme="retro"] .hljs-section {
-  color: #005cc5;
-  font-weight: bold;
-}
-[data-theme="retro"] .hljs-bullet {
-  color: #735c0f;
-}
-[data-theme="retro"] .hljs-emphasis {
-  color: #24292e;
-  font-style: italic;
-}
-[data-theme="retro"] .hljs-strong {
-  color: #24292e;
-  font-weight: bold;
-}
-[data-theme="retro"] .hljs-addition {
-  color: #22863a;
-  background-color: #f0fff4;
-}
-[data-theme="retro"] .hljs-deletion {
-  color: #b31d28;
-  background-color: #ffeef0;
-}
 
 /* Highlight.js - GitHub Dark theme for luxury */
 [data-theme="luxury"] .hljs {
@@ -179,4 +174,34 @@
 [data-theme="luxury"] .hljs-deletion {
   color: #ffdcd7;
   background-color: #67060c;
+}
+
+/* Chat panel styles */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(1rem); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in {
+  animation: slide-in-right 0.25s ease-out both;
+}
+
+/* Chat prose overrides - tighter spacing for conversation context */
+.prose-sm pre {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.prose-sm :where(code):not(:where(pre *)) {
+  font-size: 0.8em;
+  padding: 0.15em 0.35em;
+  border-radius: 0.25rem;
+  background: oklch(0.2 0.01 0);
+}
+
+/* Staggered card entrance animation */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out both;
 }

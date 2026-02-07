@@ -9,6 +9,12 @@ defmodule Pearl.Wiki do
   alias Pearl.Wiki.{Generator, WikiCache}
   alias Pearl.Repositories.RepoRecord
 
+  @doc """
+  Generates a wiki for the given repository.
+
+  Delegates to `Pearl.Wiki.Generator` and caches the result.
+  Calls `on_progress` with status messages during generation.
+  """
   @spec generate(RepoRecord.t(), (String.t() -> any())) ::
           {:ok, map()} | {:error, term()}
   def generate(repo, on_progress \\ fn _ -> :ok end) do
@@ -27,6 +33,7 @@ defmodule Pearl.Wiki do
     end
   end
 
+  @doc "Returns the most recent cached wiki for the given repository, or `nil`."
   @spec get_cached(RepoRecord.t()) :: WikiCache.t() | nil
   def get_cached(%RepoRecord{id: repo_id}) do
     WikiCache
@@ -36,6 +43,7 @@ defmodule Pearl.Wiki do
     |> Repo.one()
   end
 
+  @doc "Saves wiki data to the cache, replacing any existing cache for the repository."
   @spec save_cache(RepoRecord.t(), map()) :: {:ok, WikiCache.t()} | {:error, Ecto.Changeset.t()}
   def save_cache(%RepoRecord{id: repo_id}, wiki_data) do
     # Delete existing cache for this repo
@@ -54,6 +62,7 @@ defmodule Pearl.Wiki do
     |> Repo.insert()
   end
 
+  @doc "Deletes cached wiki data for the given repository."
   @spec delete_cache(RepoRecord.t()) :: {non_neg_integer(), nil}
   def delete_cache(%RepoRecord{id: repo_id}) do
     WikiCache

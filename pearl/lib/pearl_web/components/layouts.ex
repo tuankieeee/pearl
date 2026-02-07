@@ -38,27 +38,8 @@ defmodule PearlWeb.Layouts do
     <header class="navbar px-4 sm:px-6 lg:px-8">
       <div class="flex-1">
         <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
+          <span class="text-xl font-bold">Pearl</span>
         </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
       </div>
     </header>
 
@@ -112,34 +93,6 @@ defmodule PearlWeb.Layouts do
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
     </div>
-    """
-  end
-
-  @doc """
-  Provides dark vs light theme toggle based on themes defined in app.css.
-
-  Uses form-based toggle that posts to /theme, causing page reload to apply theme.
-  """
-  def theme_toggle(assigns) do
-    ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/2 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=luxury]_&]:left-1/2 transition-[left]" />
-
-      <.theme_button theme="retro" icon="hero-sun-micro" />
-      <.theme_button theme="luxury" icon="hero-moon-micro" />
-    </div>
-    """
-  end
-
-  defp theme_button(assigns) do
-    ~H"""
-    <form action="/theme" method="post" class="contents">
-      <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
-      <input type="hidden" name="theme" value={@theme} />
-      <button type="submit" class="flex p-2 cursor-pointer w-1/2">
-        <.icon name={@icon} class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-    </form>
     """
   end
 end

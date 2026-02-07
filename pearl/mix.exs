@@ -12,7 +12,10 @@ defmodule Pearl.MixProject do
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
-      dialyzer: [plt_add_apps: [:mix]]
+      dialyzer: [plt_add_apps: [:mix]],
+      name: "Pearl",
+      source_url: "https://github.com/existential-birds/pearl",
+      docs: docs()
     ]
   end
 
@@ -70,7 +73,75 @@ defmodule Pearl.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.35", only: :dev, runtime: false}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      source_url_pattern:
+        "https://github.com/existential-birds/pearl/blob/main/pearl/%{path}#L%{line}",
+      extras: [
+        "../README.md",
+        "guides/architecture.md",
+        "guides/rag-pipeline.md",
+        "guides/llm-providers.md"
+      ],
+      groups_for_extras: [
+        Guides: ~r/guides\/.+/
+      ],
+      extra_section: "GUIDES",
+      groups_for_modules: [
+        "Core Contexts": [
+          Pearl.Repositories,
+          Pearl.Wiki,
+          Pearl.Rag
+        ],
+        "LLM Providers": [
+          Pearl.Providers,
+          Pearl.Providers.Provider,
+          Pearl.Providers.Ollama,
+          Pearl.Providers.OpenRouter
+        ],
+        "Wiki Generation": [
+          Pearl.Wiki,
+          Pearl.Wiki.Generator,
+          Pearl.Wiki.Prompts,
+          Pearl.Wiki.WikiCache
+        ],
+        "RAG Engine": [
+          Pearl.Rag,
+          Pearl.Rag.Chunker,
+          Pearl.Rag.Embedding
+        ],
+        Repositories: [
+          Pearl.Repositories,
+          Pearl.Repositories.RepoRecord,
+          Pearl.Repositories.Git
+        ],
+        "Web Layer": [
+          PearlWeb,
+          PearlWeb.Router,
+          PearlWeb.Endpoint,
+          PearlWeb.HomeLive,
+          PearlWeb.WikiLive,
+          PearlWeb.Layouts,
+          PearlWeb.CoreComponents,
+          PearlWeb.MarkdownComponent
+        ],
+        Configuration: [
+          Pearl.Config
+        ]
+      ],
+      nest_modules_by_prefix: [
+        Pearl.Providers,
+        Pearl.Repositories,
+        Pearl.Wiki,
+        Pearl.Rag,
+        PearlWeb
+      ]
     ]
   end
 

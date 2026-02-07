@@ -15,7 +15,7 @@ defmodule Pearl.Rag.Embedding do
           file_path: String.t() | nil,
           chunk_index: integer() | nil,
           content: String.t() | nil,
-          embedding: Pgvector.Ecto.Vector.t() | nil,
+          embedding: term() | nil,
           token_count: integer() | nil,
           inserted_at: DateTime.t() | nil
         }

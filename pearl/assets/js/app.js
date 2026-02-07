@@ -27,12 +27,14 @@ import topbar from "../vendor/topbar"
 import MermaidHook from "./hooks/mermaid"
 import ScrollToBottomHook from "./hooks/scroll_to_bottom"
 import HighlightHook from "./hooks/highlight"
+import AutoFocusHook from "./hooks/auto_focus"
 
 let Hooks = {
   ...colocatedHooks,
   Mermaid: MermaidHook,
   ScrollToBottom: ScrollToBottomHook,
-  Highlight: HighlightHook
+  Highlight: HighlightHook,
+  AutoFocus: AutoFocusHook
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")

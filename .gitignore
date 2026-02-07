@@ -1,12 +1,16 @@
 # Log files
 logs/
 
-# Documentation build output
-docs/
-
 # IDE
 .vscode/
 
 # Tool config directories
 .expert/
 .serena/
+
+# macOS
+.DS_Store
+
+# Review artifacts
+.review-debug-*.log
+.review-output.md

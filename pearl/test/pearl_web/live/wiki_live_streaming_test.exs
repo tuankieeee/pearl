@@ -52,7 +52,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
       # Open the ask panel
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
 
       # Verify panel is open and has the input
       assert has_element?(view, "input[name='question']")
@@ -65,13 +65,13 @@ defmodule PearlWeb.WikiLiveStreamingTest do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
       # Open the ask panel
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
 
       html = render(view)
 
       # Verify panel structure
       assert html =~ "Ask about the codebase"
-      assert has_element?(view, "input[placeholder='Ask a question...']")
+      assert has_element?(view, "input[placeholder='Ask anything about this codebase...']")
       assert has_element?(view, "button[type='submit']")
     end
 
@@ -82,7 +82,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
       refute render(view) =~ "Ask about the codebase"
 
       # Open panel
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
       assert render(view) =~ "Ask about the codebase"
 
       # Close panel via the X button
@@ -94,11 +94,11 @@ defmodule PearlWeb.WikiLiveStreamingTest do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
       # Open ask panel
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
 
       # Initially, no loading indicator until question is submitted
       html = render(view)
-      refute html =~ "loading-infinity"
+      refute html =~ "loading-dots"
     end
   end
 
@@ -106,7 +106,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
     test "receives and displays streaming chunks", %{conn: conn, repo: repo} do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
       pid = view.pid
 
       send(pid, {:answer_chunk, "Hello"})
@@ -118,7 +118,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
     test "concatenates multiple chunks correctly", %{conn: conn, repo: repo} do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
       pid = view.pid
 
       send(pid, {:answer_chunk, "Hello"})
@@ -134,7 +134,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
     test "handles empty chunks gracefully", %{conn: conn, repo: repo} do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
       pid = view.pid
 
       send(pid, {:answer_chunk, "Start"})
@@ -149,7 +149,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
     test "handles answer_complete message", %{conn: conn, repo: repo} do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
       pid = view.pid
 
       send(pid, {:answer_chunk, "Complete answer"})
@@ -164,7 +164,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
     test "handles chunks with special characters", %{conn: conn, repo: repo} do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
       pid = view.pid
 
       send(pid, {:answer_chunk, "# Header\n\n"})
@@ -179,7 +179,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
     test "handles unicode chunks correctly", %{conn: conn, repo: repo} do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
       pid = view.pid
 
       send(pid, {:answer_chunk, "Hello "})
@@ -194,7 +194,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
     test "rapid sequential chunks are all processed", %{conn: conn, repo: repo} do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
       pid = view.pid
 
       for i <- 1..10 do
@@ -211,7 +211,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
     test "closing and reopening panel preserves answer", %{conn: conn, repo: repo} do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
       pid = view.pid
 
       send(pid, {:answer_chunk, "Persistent answer"})
@@ -221,7 +221,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
       view |> element("button[phx-click='toggle_ask'].btn-circle") |> render_click()
 
       # Reopen panel
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
 
       html = render(view)
 
@@ -233,7 +233,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
     test "handles answer_error message", %{conn: conn, repo: repo} do
       {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
 
-      view |> element("button", "Ask a Question") |> render_click()
+      view |> element("button", "Chat with AI") |> render_click()
       pid = view.pid
 
       send(pid, {:answer_error, :api_timeout})

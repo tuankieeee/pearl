@@ -1,4 +1,13 @@
 defmodule PearlWeb.Router do
+  @moduledoc """
+  Router for the Pearl web application.
+
+  ## Routes
+
+    * `GET /` - Home page with repository list and clone form (`PearlWeb.HomeLive`)
+    * `GET /wiki/:id` - Wiki viewer with RAG-powered Q&A chat (`PearlWeb.WikiLive`)
+  """
+
   use PearlWeb, :router
 
   pipeline :browser do
@@ -8,7 +17,6 @@ defmodule PearlWeb.Router do
     plug :put_root_layout, html: {PearlWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug PearlWeb.Plugs.Theme
   end
 
   pipeline :api do
@@ -17,8 +25,6 @@ defmodule PearlWeb.Router do
 
   scope "/", PearlWeb do
     pipe_through :browser
-
-    post "/theme", ThemeController, :update
 
     live "/", HomeLive, :index
     live "/wiki/:id", WikiLive, :show

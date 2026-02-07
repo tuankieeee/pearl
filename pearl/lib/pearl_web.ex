@@ -1,20 +1,24 @@
 defmodule PearlWeb do
   @moduledoc """
-  The entrypoint for defining your web interface, such
-  as controllers, components, channels, and so on.
+  The web layer for Pearl, built on Phoenix LiveView.
 
-  This can be used in your application as:
+  Provides the entrypoint for defining web interface concerns.
+  Use it in your application as:
 
-      use PearlWeb, :controller
+      use PearlWeb, :live_view
       use PearlWeb, :html
 
-  The definitions below will be executed for every controller,
-  component, etc, so keep them short and clean, focused
-  on imports, uses and aliases.
+  ## Web Modules
 
-  Do NOT define functions inside the quoted expressions
-  below. Instead, define additional modules and import
-  those modules here.
+    * `PearlWeb.HomeLive` - Repository list and clone form
+    * `PearlWeb.WikiLive` - Wiki viewer with RAG-powered chat
+    * `PearlWeb.CoreComponents` - Shared UI components (daisyUI)
+    * `PearlWeb.MarkdownComponent` - Markdown rendering with Mermaid support
+
+  ## Routes
+
+    * `/` - Home page (`PearlWeb.HomeLive`)
+    * `/wiki/:id` - Wiki viewer (`PearlWeb.WikiLive`)
   """
 
   def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)

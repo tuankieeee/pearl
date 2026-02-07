@@ -107,6 +107,6 @@ PEARL_REPOS_PATH=~/.pearl/repos
 ## Tech Stack
 
 - **Backend**: Elixir 1.15+, Phoenix 1.8, Ecto with PostgreSQL
-- **Frontend**: Phoenix LiveView 1.1, Tailwind CSS 4, daisyUI (retro/synthwave themes)
+- **Frontend**: Phoenix LiveView 1.1, Tailwind CSS 4, daisyUI (luxury dark theme)
 - **LLM**: Ollama (local) or OpenRouter (cloud) with embedding support
 - **Vector Search**: pgvector with HNSW indexing
