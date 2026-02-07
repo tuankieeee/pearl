@@ -51,9 +51,6 @@ defmodule PearlWeb.Layouts do
             <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
           </li>
           <li>
-            <.theme_toggle />
-          </li>
-          <li>
             <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
               Get Started <span aria-hidden="true">&rarr;</span>
             </a>
@@ -115,31 +112,4 @@ defmodule PearlWeb.Layouts do
     """
   end
 
-  @doc """
-  Provides dark vs light theme toggle based on themes defined in app.css.
-
-  Uses form-based toggle that posts to /theme, causing page reload to apply theme.
-  """
-  def theme_toggle(assigns) do
-    ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/2 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=luxury]_&]:left-1/2 transition-[left]" />
-
-      <.theme_button theme="retro" icon="hero-sun-micro" />
-      <.theme_button theme="luxury" icon="hero-moon-micro" />
-    </div>
-    """
-  end
-
-  defp theme_button(assigns) do
-    ~H"""
-    <form action="/theme" method="post" class="contents">
-      <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
-      <input type="hidden" name="theme" value={@theme} />
-      <button type="submit" class="flex p-2 cursor-pointer w-1/2">
-        <.icon name={@icon} class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-    </form>
-    """
-  end
 end

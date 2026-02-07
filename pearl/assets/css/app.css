@@ -10,9 +10,25 @@
 /* Typography for prose/markdown */
 @plugin "@tailwindcss/typography";
 
-/* daisyUI with retro (light) and luxury (dark) themes */
+/* daisyUI with luxury (dark) theme only */
 @plugin "daisyui" {
-  themes: retro --default, luxury --prefersdark;
+  themes: luxury --default;
+}
+
+/* Fonts: Space Grotesk (headings) + DM Sans (body) + JetBrains Mono (code) */
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Apply heading font to all headings and code font to code elements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
 }
 
 /* LiveView loading states */
@@ -22,85 +38,6 @@
 
 /* LiveView wrapper transparency */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
-
-/* Highlight.js - GitHub Light theme for retro */
-[data-theme="retro"] .hljs {
-  color: #24292e;
-  background: #f6f8fa;
-}
-[data-theme="retro"] .hljs-doctag,
-[data-theme="retro"] .hljs-keyword,
-[data-theme="retro"] .hljs-meta .hljs-keyword,
-[data-theme="retro"] .hljs-template-tag,
-[data-theme="retro"] .hljs-template-variable,
-[data-theme="retro"] .hljs-type,
-[data-theme="retro"] .hljs-variable.language_ {
-  color: #d73a49;
-}
-[data-theme="retro"] .hljs-title,
-[data-theme="retro"] .hljs-title.class_,
-[data-theme="retro"] .hljs-title.class_.inherited__,
-[data-theme="retro"] .hljs-title.function_ {
-  color: #6f42c1;
-}
-[data-theme="retro"] .hljs-attr,
-[data-theme="retro"] .hljs-attribute,
-[data-theme="retro"] .hljs-literal,
-[data-theme="retro"] .hljs-meta,
-[data-theme="retro"] .hljs-number,
-[data-theme="retro"] .hljs-operator,
-[data-theme="retro"] .hljs-selector-attr,
-[data-theme="retro"] .hljs-selector-class,
-[data-theme="retro"] .hljs-selector-id,
-[data-theme="retro"] .hljs-variable {
-  color: #005cc5;
-}
-[data-theme="retro"] .hljs-string,
-[data-theme="retro"] .hljs-meta .hljs-string,
-[data-theme="retro"] .hljs-regexp {
-  color: #032f62;
-}
-[data-theme="retro"] .hljs-built_in,
-[data-theme="retro"] .hljs-symbol {
-  color: #e36209;
-}
-[data-theme="retro"] .hljs-code,
-[data-theme="retro"] .hljs-comment,
-[data-theme="retro"] .hljs-formula {
-  color: #6a737d;
-}
-[data-theme="retro"] .hljs-name,
-[data-theme="retro"] .hljs-quote,
-[data-theme="retro"] .hljs-selector-pseudo,
-[data-theme="retro"] .hljs-selector-tag {
-  color: #22863a;
-}
-[data-theme="retro"] .hljs-subst {
-  color: #24292e;
-}
-[data-theme="retro"] .hljs-section {
-  color: #005cc5;
-  font-weight: bold;
-}
-[data-theme="retro"] .hljs-bullet {
-  color: #735c0f;
-}
-[data-theme="retro"] .hljs-emphasis {
-  color: #24292e;
-  font-style: italic;
-}
-[data-theme="retro"] .hljs-strong {
-  color: #24292e;
-  font-weight: bold;
-}
-[data-theme="retro"] .hljs-addition {
-  color: #22863a;
-  background-color: #f0fff4;
-}
-[data-theme="retro"] .hljs-deletion {
-  color: #b31d28;
-  background-color: #ffeef0;
-}
 
 /* Highlight.js - GitHub Dark theme for luxury */
 [data-theme="luxury"] .hljs {
@@ -179,4 +116,13 @@
 [data-theme="luxury"] .hljs-deletion {
   color: #ffdcd7;
   background-color: #67060c;
+}
+
+/* Staggered card entrance animation */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out both;
 }

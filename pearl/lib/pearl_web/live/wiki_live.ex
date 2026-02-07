@@ -195,8 +195,14 @@ defmodule PearlWeb.WikiLive do
           </nav>
 
           <div class="p-4 border-t border-base-300">
-            <button phx-click="toggle_ask" class="btn btn-primary btn-sm w-full">
-              Ask a Question
+            <button phx-click="toggle_ask" class="btn btn-ghost btn-sm w-full gap-2 text-base-content/60 hover:text-base-content">
+              <%= if @ask_open do %>
+                <.icon name="hero-x-mark" class="size-4" />
+                Close Chat
+              <% else %>
+                <.icon name="hero-chat-bubble-left-right" class="size-4" />
+                Chat with AI
+              <% end %>
             </button>
           </div>
         </aside>

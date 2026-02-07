@@ -27,7 +27,7 @@ defmodule PearlWeb.HomeLive do
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-base-200">
-      <div class="max-w-4xl mx-auto py-12 px-4">
+      <div class="max-w-6xl mx-auto py-12 px-4">
         <header class="text-center mb-12">
           <h1 class="text-4xl font-bold mb-2">Pearl</h1>
           <p class="opacity-70">Generate wikis from your code.</p>
@@ -78,101 +78,117 @@ defmodule PearlWeb.HomeLive do
         </div>
 
         <%= if length(@repos) > 0 do %>
-          <div class="space-y-4">
-            <h2 class="text-xl font-semibold">Recent Repositories</h2>
-            <%= for repo <- @repos do %>
-              <div class="card bg-base-100 shadow-md">
-                <div class="card-body p-5">
-                  <div class="flex items-start gap-4">
-                    <div class="avatar">
-                      <div class="w-12 rounded-full">
-                        <img src={avatar_url(repo)} alt={repo.owner} />
-                      </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <div class="flex items-center justify-between gap-2">
-                        <div>
-                          <h3 class="font-bold text-lg">{repo.name}</h3>
-                          <.link href={repo.url} target="_blank" class="text-sm link link-primary">
-                            {repo.owner}/{repo.name} ↗
+          <div>
+            <h2 class="text-xl font-semibold mb-6">Recent Repositories</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <%= for {repo, idx} <- Enum.with_index(@repos) do %>
+                <div
+                  class={[
+                    "card bg-base-100 shadow-md border-l-4 hover:-translate-y-1 transition-transform duration-200 animate-fade-up",
+                    status_border(repo.status)
+                  ]}
+                  style={"animation-delay: #{idx * 75}ms"}
+                >
+                  <div class="card-body p-5">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3">
+                        <div class="avatar">
+                          <div class="w-10 rounded-full">
+                            <img src={avatar_url(repo)} alt={repo.owner} />
+                          </div>
+                        </div>
+                        <div class="min-w-0">
+                          <h3 class="font-bold text-base truncate">{repo.name}</h3>
+                          <.link href={repo.url} target="_blank" class="text-xs link link-primary opacity-70">
+                            {repo.owner}/{repo.name}
                           </.link>
                         </div>
-                        <div class="flex items-center gap-2">
-                          <span class={"badge #{status_badge(repo.status)}"}>{repo.status}</span>
-                          <%= if @confirm_delete_id == repo.id do %>
-                            <button
-                              phx-click="confirm_delete"
-                              phx-value-id={repo.id}
-                              class="btn btn-error btn-xs"
-                            >
-                              Delete
-                            </button>
-                            <button phx-click="cancel_delete" class="btn btn-ghost btn-xs">
-                              Cancel
-                            </button>
-                          <% else %>
-                            <button
-                              phx-click="request_delete"
-                              phx-value-id={repo.id}
-                              class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
-                              disabled={
-                                repo.status in ["cloning", "analyzing", "generating", "pending"] or
-                                  Map.has_key?(@progress_by_repo, repo.id)
-                              }
-                            >
-                              <.icon name="hero-trash" class="size-4" />
-                            </button>
-                          <% end %>
-                        </div>
                       </div>
-
-                      <%= if progress = @progress_by_repo[repo.id] do %>
-                        <div class="flex items-center gap-2 mt-2 text-sm text-warning">
-                          <span class="loading loading-spinner loading-sm"></span>
-                          <span>{progress}</span>
-                        </div>
-                      <% else %>
-                        <%= if repo.description do %>
-                          <p class="text-sm opacity-70 mt-2 line-clamp-2">{repo.description}</p>
-                        <% end %>
-                      <% end %>
-
-                      <div class="flex flex-wrap items-center gap-3 mt-3">
-                        <%= if repo.stars do %>
-                          <span class="badge badge-outline gap-1">
-                            <.icon name="hero-star" class="size-3" />
-                            {format_number(repo.stars)} stars
-                          </span>
-                        <% end %>
-                        <%= if repo.language do %>
-                          <span class="badge badge-outline gap-1">
-                            <span class={"w-2 h-2 rounded-full #{language_color(repo.language)}"}>
-                            </span>
-                            {repo.language}
-                          </span>
-                        <% end %>
-                        <%= if repo.pushed_at do %>
-                          <span class="text-xs opacity-60">
-                            Updated: {format_date(repo.pushed_at)}
-                          </span>
+                      <div class="flex items-center gap-1">
+                        <%= if @confirm_delete_id == repo.id do %>
+                          <button
+                            phx-click="confirm_delete"
+                            phx-value-id={repo.id}
+                            class="btn btn-error btn-xs"
+                          >
+                            Delete
+                          </button>
+                          <button phx-click="cancel_delete" class="btn btn-ghost btn-xs">
+                            Cancel
+                          </button>
+                        <% else %>
+                          <button
+                            phx-click="request_delete"
+                            phx-value-id={repo.id}
+                            class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+                            disabled={
+                              repo.status in ["cloning", "analyzing", "generating", "pending"] or
+                                Map.has_key?(@progress_by_repo, repo.id)
+                            }
+                          >
+                            <.icon name="hero-trash" class="size-4" />
+                          </button>
                         <% end %>
                       </div>
                     </div>
-                  </div>
-                  <div class="card-actions justify-end mt-3">
-                    <%= if repo.status == "ready" do %>
-                      <.link navigate={~p"/wiki/#{repo.id}"} class="btn btn-primary btn-sm">
-                        View Wiki
-                      </.link>
+
+                    <%= if progress = @progress_by_repo[repo.id] do %>
+                      <div class="flex items-center gap-2 mt-3 text-sm text-warning">
+                        <span class="loading loading-spinner loading-sm"></span>
+                        <span class="truncate">{progress}</span>
+                      </div>
                     <% else %>
-                      <button class="btn btn-primary btn-sm" disabled>
-                        {status_button_text(repo.status)}
-                      </button>
+                      <%= if repo.description do %>
+                        <p class="text-sm opacity-70 mt-3 line-clamp-2">{repo.description}</p>
+                      <% else %>
+                        <p class="text-sm opacity-40 mt-3 italic">No description</p>
+                      <% end %>
                     <% end %>
+
+                    <div class="flex flex-wrap items-center gap-2 mt-auto pt-3">
+                      <%= if repo.stars do %>
+                        <span class="badge badge-sm badge-outline gap-1">
+                          <.icon name="hero-star" class="size-3" />
+                          {format_number(repo.stars)}
+                        </span>
+                      <% end %>
+                      <%= if repo.language do %>
+                        <span class="badge badge-sm badge-outline gap-1">
+                          <span class={"w-2 h-2 rounded-full #{language_color(repo.language)}"}>
+                          </span>
+                          {repo.language}
+                        </span>
+                      <% end %>
+                      <span class={"badge badge-sm #{status_badge(repo.status)}"}>{repo.status}</span>
+                    </div>
+
+                    <%= if repo.pushed_at do %>
+                      <div class="text-xs opacity-50 mt-2">
+                        Updated {format_date(repo.pushed_at)}
+                      </div>
+                    <% end %>
+
+                    <div class="card-actions mt-3">
+                      <%= if repo.status == "ready" do %>
+                        <.link navigate={~p"/wiki/#{repo.id}"} class="btn btn-primary btn-sm w-full">
+                          View Wiki
+                        </.link>
+                      <% else %>
+                        <button class="btn btn-sm w-full" disabled>
+                          {status_button_text(repo.status)}
+                        </button>
+                      <% end %>
+                    </div>
                   </div>
                 </div>
-              </div>
-            <% end %>
+              <% end %>
+            </div>
+          </div>
+        <% else %>
+          <div class="text-center py-16 opacity-50">
+            <.icon name="hero-folder-open" class="size-12 mx-auto mb-4" />
+            <p class="text-lg">No repositories yet</p>
+            <p class="text-sm mt-1">Paste a GitHub URL above to generate your first wiki.</p>
           </div>
         <% end %>
       </div>
@@ -428,6 +444,14 @@ defmodule PearlWeb.HomeLive do
   defp status_badge("generating"), do: "badge-info"
   defp status_badge("failed"), do: "badge-error"
   defp status_badge(_), do: "badge-neutral"
+
+  defp status_border("ready"), do: "border-success"
+  defp status_border("pending"), do: "border-warning"
+  defp status_border("cloning"), do: "border-warning"
+  defp status_border("analyzing"), do: "border-warning"
+  defp status_border("generating"), do: "border-info"
+  defp status_border("failed"), do: "border-error"
+  defp status_border(_), do: "border-neutral"
 
   defp status_button_text("pending"), do: "Starting..."
   defp status_button_text("generating"), do: "Generating..."
