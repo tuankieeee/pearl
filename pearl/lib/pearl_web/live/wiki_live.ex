@@ -353,9 +353,23 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_info({:EXIT, pid, reason}, socket) do
-    # Linked task crashed - log and reset loading state
     Logger.error("Linked task #{inspect(pid)} crashed: #{inspect(reason)}")
-    {:noreply, assign(socket, ask_loading: false)}
+
+    messages = socket.assigns.ask_messages
+
+    updated_messages =
+      case Enum.split(messages, -1) do
+        {init, [%{role: :assistant} = last]} ->
+          init ++ [%{last | content: last.content <> "\n\n_(Response interrupted)_"}]
+
+        _ ->
+          messages
+      end
+
+    {:noreply,
+     socket
+     |> assign(ask_loading: false, ask_messages: updated_messages)
+     |> push_event("focus-input", %{})}
   end
 
   defp get_page_content(nil, _), do: ""

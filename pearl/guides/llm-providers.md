@@ -38,7 +38,7 @@ export OLLAMA_HOST=http://localhost:11434
 export OLLAMA_DEFAULT_MODEL=llama3.2:3b
 ```
 
-Ollama requires v0.4.0+ for embedding support.
+Ollama requires v0.3.3+ for the `/api/embed` endpoint used by Pearl.
 
 ## Provider Behaviour
 
