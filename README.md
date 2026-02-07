@@ -2,6 +2,8 @@
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/existential-birds/pearl)
 
+<img width="1421" height="989" alt="pearl_qa" src="https://github.com/user-attachments/assets/d3a7730c-f1d2-43f6-8908-e38fd6d3db65" />
+
 Pearl is a RAG (Retrieval-Augmented Generation) system built with Elixir and Phoenix. It generates comprehensive wikis from code repositories, allowing you to ask questions about any codebase using natural language.
 
 This project was inspired by [DeepWiki from Devin](https://cognition.ai/blog/deepwiki) and created as a learning exercise to explore Elixir, Phoenix LiveView, and RAG architectures—starting with naive RAG and progressing through techniques from recent research papers.
