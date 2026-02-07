@@ -69,6 +69,7 @@ defmodule Pearl.Wiki.Prompts do
     ]
   end
 
+  @doc "Builds an LLM prompt for generating a single wiki page from file contents."
   @spec page_prompt(map(), [{String.t(), String.t()}]) :: [map()]
   def page_prompt(page_spec, file_contents) do
     page_prompt(page_spec, file_contents, :default)

@@ -1,4 +1,11 @@
 defmodule PearlWeb.Telemetry do
+  @moduledoc """
+  Telemetry supervisor for Pearl metrics collection.
+
+  Defines Phoenix endpoint, router, database, and VM metrics
+  reported via `Telemetry.Metrics` summaries.
+  """
+
   use Supervisor
   import Telemetry.Metrics
 

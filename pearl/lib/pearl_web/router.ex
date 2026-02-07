@@ -1,4 +1,13 @@
 defmodule PearlWeb.Router do
+  @moduledoc """
+  Router for the Pearl web application.
+
+  ## Routes
+
+    * `GET /` - Home page with repository list and clone form (`PearlWeb.HomeLive`)
+    * `GET /wiki/:id` - Wiki viewer with RAG-powered Q&A chat (`PearlWeb.WikiLive`)
+  """
+
   use PearlWeb, :router
 
   pipeline :browser do

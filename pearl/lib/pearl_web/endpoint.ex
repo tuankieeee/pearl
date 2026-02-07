@@ -1,4 +1,11 @@
 defmodule PearlWeb.Endpoint do
+  @moduledoc """
+  Phoenix endpoint for the Pearl web application.
+
+  Configures the HTTP server, static file serving, session management,
+  and the plug pipeline for request processing.
+  """
+
   use Phoenix.Endpoint, otp_app: :pearl
 
   # The session will be stored in the cookie and signed,

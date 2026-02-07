@@ -9,6 +9,11 @@ defmodule Pearl.Repositories.Git do
     {~r{^https?://bitbucket\.org/([^/]+)/([^/\.]+)(?:\.git)?$}, "bitbucket"}
   ]
 
+  @doc """
+  Parses a repository URL into provider, owner, and name components.
+
+  Supports GitHub, GitLab, and Bitbucket URLs.
+  """
   @spec parse_url(String.t()) :: {:ok, map()} | {:error, atom()}
   def parse_url(url) do
     case find_match(url, @url_patterns) do
@@ -33,6 +38,12 @@ defmodule Pearl.Repositories.Git do
     end
   end
 
+  @doc """
+  Clones a git repository to the target path.
+
+  Performs a shallow clone (`--depth 1`). Supports optional `:branch`
+  and `:token` options for authentication.
+  """
   @spec clone(String.t(), String.t(), keyword()) :: {:ok, String.t()} | {:error, term()}
   def clone(url, target_path, opts \\ []) do
     branch = Keyword.get(opts, :branch, "HEAD")
@@ -62,6 +73,7 @@ defmodule Pearl.Repositories.Git do
     %{uri | userinfo: token} |> URI.to_string()
   end
 
+  @doc "Lists tracked files in the repository, filtered to recognized code file extensions."
   @spec list_files(String.t()) :: {:ok, [String.t()]} | {:error, term()}
   def list_files(repo_path) do
     case System.cmd("git", ["ls-files"], cd: repo_path, stderr_to_stdout: true) do
