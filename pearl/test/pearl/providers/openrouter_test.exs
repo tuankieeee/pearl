@@ -11,11 +11,10 @@ defmodule Pearl.Providers.OpenRouterTest do
         Application.put_env(:pearl, :providers, original)
       end)
 
-      :ok
+      %{original: original}
     end
 
-    test "returns error when API key not configured" do
-      original = Application.get_env(:pearl, :providers)
+    test "returns error when API key not configured", %{original: original} do
 
       openrouter_config = original[:openrouter] || []
 

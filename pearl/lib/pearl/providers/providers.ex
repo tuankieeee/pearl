@@ -13,7 +13,7 @@ defmodule Pearl.Providers do
   @spec chat(provider(), String.t(), [map()], keyword()) ::
           {:ok, String.t() | Enumerable.t()} | {:error, term()}
   def chat(provider, model, messages, opts \\ []) do
-    with_provider(provider, &(&1.chat(model, messages, opts)))
+    with_provider(provider, & &1.chat(model, messages, opts))
   end
 
   @spec embed(provider(), [String.t()]) :: {:ok, [[float()]]} | {:error, term()}

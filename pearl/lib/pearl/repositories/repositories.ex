@@ -262,11 +262,16 @@ defmodule Pearl.Repositories do
   def read_file(%RepoRecord{local_path: nil}, _path), do: {:error, :not_cloned}
 
   def read_file(%RepoRecord{local_path: repo_path}, file_path) do
-    full_path = Path.join(repo_path, file_path)
+    full_path = Path.join(repo_path, file_path) |> Path.expand()
+    repo_path_expanded = Path.expand(repo_path)
 
-    case File.read(full_path) do
-      {:ok, content} -> {:ok, content}
-      {:error, reason} -> {:error, reason}
+    if String.starts_with?(full_path, repo_path_expanded <> "/") do
+      case File.read(full_path) do
+        {:ok, content} -> {:ok, content}
+        {:error, reason} -> {:error, reason}
+      end
+    else
+      {:error, :path_traversal}
     end
   end
 end

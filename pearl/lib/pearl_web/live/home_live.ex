@@ -6,6 +6,8 @@ defmodule PearlWeb.HomeLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    # Trap exits to handle linked task crashes gracefully
+    Process.flag(:trap_exit, true)
     repos = Repositories.list_repos()
 
     {:ok,
@@ -323,6 +325,21 @@ defmodule PearlWeb.HomeLive do
        repos: repos,
        progress_by_repo: Map.delete(socket.assigns.progress_by_repo, repo_id),
        error: format_error(reason)
+     )}
+  end
+
+  @impl true
+  def handle_info({:EXIT, _pid, :normal}, socket), do: {:noreply, socket}
+  def handle_info({:EXIT, _pid, :shutdown}, socket), do: {:noreply, socket}
+  def handle_info({:EXIT, _pid, {:shutdown, _}}, socket), do: {:noreply, socket}
+
+  def handle_info({:EXIT, _pid, reason}, socket) do
+    # A linked task crashed - clear generating state and show error
+    {:noreply,
+     assign(socket,
+       generating: false,
+       progress_by_repo: %{},
+       error: "Task failed unexpectedly: #{inspect(reason)}"
      )}
   end
 

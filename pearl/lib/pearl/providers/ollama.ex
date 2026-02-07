@@ -86,6 +86,9 @@ defmodule Pearl.Providers.Ollama do
 
       {_ref, :done} ->
         {:halt, resp}
+
+      _unexpected ->
+        {[], resp}
     after
       30_000 -> {:halt, resp}
     end

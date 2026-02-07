@@ -208,8 +208,14 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_event("select_page", %{"id" => page_id}, socket) do
-    content = get_page_content(socket.assigns.wiki_cache, page_id)
-    {:noreply, assign(socket, current_page_id: page_id, current_content: content)}
+    valid_page_ids = Enum.map(socket.assigns.pages, & &1["id"])
+
+    if page_id in valid_page_ids do
+      content = get_page_content(socket.assigns.wiki_cache, page_id)
+      {:noreply, assign(socket, current_page_id: page_id, current_content: content)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
