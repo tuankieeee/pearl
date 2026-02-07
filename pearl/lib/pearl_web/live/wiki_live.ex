@@ -4,6 +4,8 @@ defmodule PearlWeb.WikiLive do
   """
   use PearlWeb, :live_view
 
+  require Logger
+
   alias Pearl.Repositories
   alias Pearl.Wiki
   alias Pearl.Rag
@@ -284,7 +286,7 @@ defmodule PearlWeb.WikiLive do
               send(pid, {:answer_error, reason})
           end
         end,
-        [link: true]
+        link: true
       )
 
     {:noreply, socket}
@@ -350,8 +352,9 @@ defmodule PearlWeb.WikiLive do
   end
 
   @impl true
-  def handle_info({:EXIT, _pid, _reason}, socket) do
-    # Linked task crashed - reset loading state
+  def handle_info({:EXIT, pid, reason}, socket) do
+    # Linked task crashed - log and reset loading state
+    Logger.error("Linked task #{inspect(pid)} crashed: #{inspect(reason)}")
     {:noreply, assign(socket, ask_loading: false)}
   end
 
