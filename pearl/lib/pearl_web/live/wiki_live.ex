@@ -259,7 +259,7 @@ defmodule PearlWeb.WikiLive do
           |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
 
         # Linked to LiveView - terminates if user navigates away
-        Task.Supervisor.start_child(
+        _ignore = Task.Supervisor.start_child(
           Pearl.TaskSupervisor,
           fn ->
             case Rag.ask(repo, question, stream: true, history: history) do

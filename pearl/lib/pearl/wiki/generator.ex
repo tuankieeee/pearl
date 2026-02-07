@@ -86,7 +86,7 @@ defmodule Pearl.Wiki.Generator do
           end
         end,
         max_concurrency: 4,
-        timeout: :timer.minutes(5)
+        timeout: 300_000
       )
       |> Enum.reduce(%{}, fn
         {:ok, {:ok, {page_id, content}}}, acc -> Map.put(acc, page_id, content)

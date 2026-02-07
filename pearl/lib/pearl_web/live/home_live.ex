@@ -336,6 +336,7 @@ defmodule PearlWeb.HomeLive do
     {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
   end
 
+  @impl true
   def handle_info({:EXIT, pid, :shutdown}, socket) do
     {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
   end
@@ -437,7 +438,7 @@ defmodule PearlWeb.HomeLive do
     do: "https://github.com/#{owner}.png?size=64"
 
   defp avatar_url(%{provider: "gitlab", owner: owner}),
-    do: "https://gitlab.com/uploads/-/system/user/avatar/#{owner}/avatar.png"
+    do: "https://api.dicebear.com/7.x/identicon/svg?seed=#{owner}"
 
   defp avatar_url(_), do: "https://api.dicebear.com/7.x/identicon/svg?seed=repo"
 

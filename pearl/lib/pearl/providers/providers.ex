@@ -23,7 +23,7 @@ defmodule Pearl.Providers do
 
   @spec list_models(provider()) :: {:ok, [map()]} | {:error, term()}
   def list_models(provider) do
-    with_provider(provider, &(&1.list_models()))
+    with_provider(provider, & &1.list_models())
   end
 
   @spec embedding_model(provider()) :: {:ok, String.t()} | {:error, term()}
