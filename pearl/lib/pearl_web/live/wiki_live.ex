@@ -97,41 +97,42 @@ defmodule PearlWeb.WikiLive do
           
     <!-- Ask panel (slide-out) -->
           <%= if @ask_open do %>
-            <aside class="w-96 bg-base-100 border-l border-base-300 flex flex-col">
-              <div class="p-4 border-b border-base-300 flex items-center justify-between">
-                <h3 class="font-semibold">Ask about the codebase</h3>
-                <button phx-click="toggle_ask" class="btn btn-ghost btn-sm btn-circle">
-                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+            <aside class="w-[36rem] bg-gradient-to-b from-base-100 to-base-200 border-l border-base-300/50 flex flex-col">
+              <div class="px-5 py-4 border-b border-primary/20 bg-gradient-to-r from-primary/5 to-transparent flex items-center justify-between">
+                <h3 class="text-sm font-semibold tracking-wide uppercase text-primary/80" style="font-family: var(--font-heading)">
+                  Ask about the codebase
+                </h3>
+                <button phx-click="toggle_ask" class="btn btn-ghost btn-sm btn-circle text-base-content/50 hover:text-base-content">
+                  <.icon name="hero-x-mark" class="size-4" />
                 </button>
               </div>
 
-              <div class="flex-1 overflow-y-auto p-4" id="ask-messages" phx-hook="ScrollToBottom">
+              <div class="flex-1 overflow-y-auto p-5" id="ask-messages" phx-hook="ScrollToBottom">
+                <%= if @ask_messages == [] do %>
+                  <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                      <.icon name="hero-chat-bubble-left-right" class="size-12 text-primary/20 mx-auto mb-4" />
+                      <p class="text-base-content/30 text-sm">Ask anything about the codebase</p>
+                    </div>
+                  </div>
+                <% end %>
                 <%= for {message, idx} <- Enum.with_index(@ask_messages) do %>
                   <%= if message.role == :user do %>
-                    <!-- User message: right-aligned, primary color -->
-                    <div class="chat chat-end">
+                    <div class="chat chat-end mb-4">
                       <div class="chat-bubble chat-bubble-primary">
                         {message.content}
                       </div>
                     </div>
                   <% else %>
-                    <!-- Assistant message: left-aligned, default color -->
-                    <div class="chat chat-start">
-                      <div class="chat-bubble">
+                    <div class="mb-4">
+                      <div class="rounded-lg bg-base-300/50 border-l-2 border-primary/40 px-4 py-3">
                         <%= if message.content == "" and @ask_loading do %>
-                          <span class="loading loading-dots loading-sm"></span>
+                          <span class="loading loading-dots loading-sm text-primary/60"></span>
                         <% else %>
                           <MarkdownComponent.markdown
                             id={"ask-msg-#{idx}"}
                             content={message.content}
-                            class="prose-sm"
+                            class="prose-sm [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_code]:text-xs"
                           />
                         <% end %>
                       </div>
@@ -140,22 +141,22 @@ defmodule PearlWeb.WikiLive do
                 <% end %>
               </div>
 
-              <div class="p-4 border-t border-base-300">
-                <form phx-submit="ask" class="flex gap-2">
+              <div class="p-4 border-t border-primary/20 bg-base-200/50">
+                <form phx-submit="ask" class="flex gap-3 items-center">
                   <input
                     type="text"
                     name="question"
                     value={@ask_current_input}
-                    placeholder="Ask a question..."
-                    class="input input-bordered input-sm flex-1"
+                    placeholder="Ask anything about this codebase..."
+                    class="input input-bordered flex-1 bg-base-300/50 focus:border-primary/50"
                     disabled={@ask_loading}
                     phx-debounce="300"
                   />
-                  <button type="submit" disabled={@ask_loading} class="btn btn-primary btn-sm">
+                  <button type="submit" disabled={@ask_loading} class="btn btn-primary btn-circle">
                     <%= if @ask_loading do %>
-                      <span class="loading loading-spinner loading-xs"></span>
+                      <span class="loading loading-spinner loading-sm"></span>
                     <% else %>
-                      Ask
+                      <.icon name="hero-paper-airplane" class="size-5" />
                     <% end %>
                   </button>
                 </form>

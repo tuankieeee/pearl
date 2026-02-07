@@ -1,9 +1,6 @@
 # Log files
 logs/
 
-# Documentation build output
-docs/
-
 # IDE
 .vscode/
 

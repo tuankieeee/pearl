@@ -118,6 +118,27 @@ code, pre, kbd, samp {
   background-color: #67060c;
 }
 
+/* Chat panel styles */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(1rem); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in {
+  animation: slide-in-right 0.25s ease-out both;
+}
+
+/* Chat prose overrides - tighter spacing for conversation context */
+.prose-sm pre {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.prose-sm :where(code):not(:where(pre *)) {
+  font-size: 0.8em;
+  padding: 0.15em 0.35em;
+  border-radius: 0.25rem;
+  background: oklch(0.2 0.01 0);
+}
+
 /* Staggered card entrance animation */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(0.75rem); }
