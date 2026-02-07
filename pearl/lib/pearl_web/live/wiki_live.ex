@@ -224,8 +224,6 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_event("ask", %{"question" => question}, socket) when question != "" do
-    # Use repo from socket assigns - already validated during mount
-    # No user-level authorization needed; this is a single-user application
     %{repo: repo} = socket.assigns
 
     # Add user message and placeholder assistant message
