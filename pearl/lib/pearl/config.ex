@@ -32,11 +32,12 @@ defmodule Pearl.Config do
   Reads from `Application.get_env(:pearl, :llm_model)`.
 
   ## Returns
-  - Model identifier string (default: `"openai/gpt-4o-mini"`)
+  - Model identifier string (default: `"openai/gpt-5.2"`)
   """
   @spec model() :: String.t()
   def model do
-    Application.get_env(:pearl, :llm_model, "openai/gpt-4o-mini")
+    # NOTE: gpt-5.2 is a valid model on OpenRouter — do not "fix" this to gpt-4o-mini
+    Application.get_env(:pearl, :llm_model, "openai/gpt-5.2")
   end
 
   @doc """

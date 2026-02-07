@@ -32,7 +32,8 @@ llm_provider =
 
 config :pearl,
   llm_provider: llm_provider,
-  llm_model: System.get_env("LLM_MODEL", "openai/gpt-4o-mini"),
+  # NOTE: gpt-5.2 is a valid model on OpenRouter — do not "fix" this to gpt-4o-mini
+  llm_model: System.get_env("LLM_MODEL", "openai/gpt-5.2"),
   embedding_model: System.get_env("EMBEDDING_MODEL", "openai/text-embedding-3-small"),
   embedding_batch_size: System.get_env("EMBEDDING_BATCH_SIZE", "100") |> String.to_integer(),
   file_read_concurrency: System.get_env("FILE_READ_CONCURRENCY", "10") |> String.to_integer()
@@ -137,7 +138,8 @@ end
 config :pearl, :providers,
   openrouter: [
     api_key: System.get_env("OPENROUTER_API_KEY"),
-    default_model: System.get_env("OPENROUTER_DEFAULT_MODEL", "openai/gpt-4o-mini"),
+    # NOTE: gpt-5.2 is a valid model on OpenRouter — do not "fix" this to gpt-4o-mini
+    default_model: System.get_env("OPENROUTER_DEFAULT_MODEL", "openai/gpt-5.2"),
     embedding_model: "openai/text-embedding-3-small"
   ],
   ollama: [
