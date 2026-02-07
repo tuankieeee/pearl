@@ -18,7 +18,7 @@ defmodule Pearl.Providers do
 
   @spec embed(provider(), [String.t()]) :: {:ok, [[float()]]} | {:error, term()}
   def embed(provider, texts) do
-    with_provider(provider, &(&1.embed(texts)))
+    with_provider(provider, & &1.embed(texts))
   end
 
   @spec list_models(provider()) :: {:ok, [map()]} | {:error, term()}

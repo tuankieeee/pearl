@@ -8,6 +8,18 @@ defmodule Pearl.Rag.Embedding do
 
   alias Pearl.Repositories.RepoRecord
 
+  @type t :: %__MODULE__{
+          id: integer() | nil,
+          repo_id: integer() | nil,
+          repo: RepoRecord.t() | Ecto.Association.NotLoaded.t() | nil,
+          file_path: String.t() | nil,
+          chunk_index: integer() | nil,
+          content: String.t() | nil,
+          embedding: Pgvector.Ecto.Vector.t() | nil,
+          token_count: integer() | nil,
+          inserted_at: DateTime.t() | nil
+        }
+
   schema "embeddings" do
     belongs_to :repo, RepoRecord
     field :file_path, :string

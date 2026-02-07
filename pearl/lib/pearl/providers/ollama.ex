@@ -20,7 +20,7 @@ defmodule Pearl.Providers.Ollama do
   end
 
   @impl true
-  def chat(model, messages, opts \\ []) do
+  def chat(model, messages, opts) do
     body = %{
       model: model,
       messages: messages,

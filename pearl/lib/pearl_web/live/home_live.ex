@@ -18,7 +18,8 @@ defmodule PearlWeb.HomeLive do
        generating: false,
        progress_by_repo: %{},
        error: nil,
-       confirm_delete_id: nil
+       confirm_delete_id: nil,
+       linked_tasks: MapSet.new()
      )}
   end
 
@@ -202,7 +203,7 @@ defmodule PearlWeb.HomeLive do
 
             # Fetch metadata in parallel (for instant card display with full info)
             # Linked to LiveView - terminates if user navigates away
-            {:ok, _pid} =
+            {:ok, metadata_pid} =
               Task.Supervisor.start_child(
                 Pearl.TaskSupervisor,
                 fn ->
@@ -216,7 +217,7 @@ defmodule PearlWeb.HomeLive do
 
             # Main generation task
             # Linked to LiveView - terminates if user navigates away
-            {:ok, _pid} =
+            {:ok, generation_pid} =
               Task.Supervisor.start_child(
                 Pearl.TaskSupervisor,
                 fn ->
@@ -225,6 +226,8 @@ defmodule PearlWeb.HomeLive do
                 end,
                 link: true
               )
+
+            socket = assign(socket, linked_tasks: MapSet.new([metadata_pid, generation_pid]))
 
             {:noreply, socket}
 
@@ -329,16 +332,29 @@ defmodule PearlWeb.HomeLive do
   end
 
   @impl true
-  def handle_info({:EXIT, _pid, :normal}, socket), do: {:noreply, socket}
-  def handle_info({:EXIT, _pid, :shutdown}, socket), do: {:noreply, socket}
-  def handle_info({:EXIT, _pid, {:shutdown, _}}, socket), do: {:noreply, socket}
+  def handle_info({:EXIT, pid, :normal}, socket) do
+    {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
+  end
 
-  def handle_info({:EXIT, _pid, reason}, socket) do
-    # A linked task crashed - clear generating state and show error
+  def handle_info({:EXIT, pid, :shutdown}, socket) do
+    {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
+  end
+
+  def handle_info({:EXIT, pid, {:shutdown, _}}, socket) do
+    {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
+  end
+
+  def handle_info({:EXIT, crashed_pid, reason}, socket) do
+    # A linked task crashed - terminate sibling tasks and clear generating state
+    socket.assigns.linked_tasks
+    |> MapSet.delete(crashed_pid)
+    |> Enum.each(&Process.exit(&1, :shutdown))
+
     {:noreply,
      assign(socket,
        generating: false,
        progress_by_repo: %{},
+       linked_tasks: MapSet.new(),
        error: "Task failed unexpectedly: #{inspect(reason)}"
      )}
   end

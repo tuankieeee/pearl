@@ -34,8 +34,7 @@ defmodule PearlWeb.WikiLive do
        ask_open: false,
        ask_messages: [],
        ask_current_input: "",
-       ask_loading: false,
-       ask_streaming: false
+       ask_loading: false
      )}
   end
 
@@ -247,7 +246,6 @@ defmodule PearlWeb.WikiLive do
         socket =
           assign(socket,
             ask_loading: true,
-            ask_streaming: false,
             ask_messages: messages,
             ask_current_input: ""
           )
@@ -304,7 +302,7 @@ defmodule PearlWeb.WikiLive do
           [%{role: "assistant", content: chunk}]
       end
 
-    {:noreply, assign(socket, ask_streaming: true, ask_messages: updated_messages)}
+    {:noreply, assign(socket, ask_messages: updated_messages)}
   end
 
   @impl true
@@ -330,7 +328,6 @@ defmodule PearlWeb.WikiLive do
     {:noreply,
      assign(socket,
        ask_loading: false,
-       ask_streaming: false,
        ask_messages: updated_messages
      )}
   end

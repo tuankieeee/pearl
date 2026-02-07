@@ -15,7 +15,6 @@ defmodule Pearl.Providers.OpenRouterTest do
     end
 
     test "returns error when API key not configured", %{original: original} do
-
       openrouter_config = original[:openrouter] || []
 
       Application.put_env(
