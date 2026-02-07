@@ -17,10 +17,12 @@ defmodule Pearl.Providers.OpenRouterTest do
     test "returns error when API key not configured" do
       original = Application.get_env(:pearl, :providers)
 
+      openrouter_config = original[:openrouter] || []
+
       Application.put_env(
         :pearl,
         :providers,
-        Keyword.put(original, :openrouter, Keyword.put(original[:openrouter], :api_key, nil))
+        Keyword.put(original || [], :openrouter, Keyword.put(openrouter_config, :api_key, nil))
       )
 
       messages = [%{role: "user", content: "Hello"}]

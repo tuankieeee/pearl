@@ -3,6 +3,8 @@ defmodule Pearl.Wiki.Generator do
   Orchestrates wiki generation from a repository.
   """
 
+  require Logger
+
   alias Pearl.Wiki.Prompts
   alias Pearl.Providers
   alias Pearl.Repositories
@@ -73,8 +75,15 @@ defmodule Pearl.Wiki.Generator do
         )
 
         case generate_page(repo, structure, page_spec, provider, model) do
-          {:ok, content} -> Map.put(acc, page_id, content)
-          _ -> acc
+          {:ok, content} ->
+            Map.put(acc, page_id, content)
+
+          {:error, reason} ->
+            Logger.error(
+              "Failed to generate wiki page '#{page_id}' for repo #{repo.id}: #{inspect(reason)}"
+            )
+
+            acc
         end
       end)
 

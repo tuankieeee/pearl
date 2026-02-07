@@ -242,6 +242,7 @@ defmodule PearlWeb.HomeLive do
       _ -> {:noreply, socket}
     end
   end
+
   @impl true
   def handle_event("cancel_delete", _params, socket) do
     {:noreply, assign(socket, confirm_delete_id: nil)}

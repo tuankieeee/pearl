@@ -151,7 +151,7 @@ defmodule Pearl.Rag do
       messages =
         [
           %{
-            role: "system",
+            role: :system,
             content: """
             You are a helpful assistant that answers questions about code repositories.
             Use the following code context to answer the user's question.
@@ -161,7 +161,7 @@ defmodule Pearl.Rag do
             #{context}
             """
           }
-        ] ++ history ++ [%{role: "user", content: question}]
+        ] ++ history ++ [%{role: :user, content: question}]
 
       Providers.chat(Config.provider(), Config.model(), messages, opts)
     end

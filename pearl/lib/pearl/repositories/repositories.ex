@@ -141,28 +141,18 @@ defmodule Pearl.Repositories do
 
   defp fetch_metadata(%RepoRecord{provider: "github", owner: owner, name: name}) do
     url = "https://api.github.com/repos/#{owner}/#{name}"
-    headers = [{"Accept", "application/vnd.github.v3+json"}, {"User-Agent", "Pearl-Wiki"}]
+    headers = [{"accept", "application/vnd.github.v3+json"}, {"user-agent", "Pearl-Wiki"}]
 
-    case :httpc.request(:get, {String.to_charlist(url), headers}, [], body_format: :binary) do
-      {:ok, {{_, 200, _}, _, body}} ->
-        case Jason.decode(body) do
-          {:ok, data} ->
-            %{
-              description: data["description"],
-              stars: data["stargazers_count"],
-              language: data["language"],
-              pushed_at: parse_datetime(data["pushed_at"])
-            }
+    case Req.get(url, headers: headers) do
+      {:ok, %Req.Response{status: 200, body: data}} ->
+        %{
+          description: data["description"],
+          stars: data["stargazers_count"],
+          language: data["language"],
+          pushed_at: parse_datetime(data["pushed_at"])
+        }
 
-          {:error, reason} ->
-            Logger.warning(
-              "Failed to decode GitHub API response for #{owner}/#{name}: #{inspect(reason)}"
-            )
-
-            %{}
-        end
-
-      {:ok, {{_, status, _}, _, body}} ->
+      {:ok, %Req.Response{status: status, body: body}} ->
         Logger.warning("GitHub API returned #{status} for #{owner}/#{name}: #{inspect(body)}")
         %{}
 
@@ -174,28 +164,18 @@ defmodule Pearl.Repositories do
 
   defp fetch_metadata(%RepoRecord{provider: "gitlab", owner: owner, name: name}) do
     url = "https://gitlab.com/api/v4/projects/#{URI.encode_www_form("#{owner}/#{name}")}"
-    headers = [{"User-Agent", "Pearl-Wiki"}]
+    headers = [{"user-agent", "Pearl-Wiki"}]
 
-    case :httpc.request(:get, {String.to_charlist(url), headers}, [], body_format: :binary) do
-      {:ok, {{_, 200, _}, _, body}} ->
-        case Jason.decode(body) do
-          {:ok, data} ->
-            %{
-              description: data["description"],
-              stars: data["star_count"],
-              language: nil,
-              pushed_at: parse_datetime(data["last_activity_at"])
-            }
+    case Req.get(url, headers: headers) do
+      {:ok, %Req.Response{status: 200, body: data}} ->
+        %{
+          description: data["description"],
+          stars: data["star_count"],
+          language: nil,
+          pushed_at: parse_datetime(data["last_activity_at"])
+        }
 
-          {:error, reason} ->
-            Logger.warning(
-              "Failed to decode GitLab API response for #{owner}/#{name}: #{inspect(reason)}"
-            )
-
-            %{}
-        end
-
-      {:ok, {{_, status, _}, _, body}} ->
+      {:ok, %Req.Response{status: status, body: body}} ->
         Logger.warning("GitLab API returned #{status} for #{owner}/#{name}: #{inspect(body)}")
         %{}
 

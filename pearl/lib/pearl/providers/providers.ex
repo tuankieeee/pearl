@@ -13,33 +13,28 @@ defmodule Pearl.Providers do
   @spec chat(provider(), String.t(), [map()], keyword()) ::
           {:ok, String.t() | Enumerable.t()} | {:error, term()}
   def chat(provider, model, messages, opts \\ []) do
-    case @providers[provider] do
-      nil -> {:error, :unknown_provider}
-      mod -> mod.chat(model, messages, opts)
-    end
+    with_provider(provider, &(&1.chat(model, messages, opts)))
   end
 
   @spec embed(provider(), [String.t()]) :: {:ok, [[float()]]} | {:error, term()}
   def embed(provider, texts) do
-    case @providers[provider] do
-      nil -> {:error, :unknown_provider}
-      mod -> mod.embed(texts)
-    end
+    with_provider(provider, &(&1.embed(texts)))
   end
 
   @spec list_models(provider()) :: {:ok, [map()]} | {:error, term()}
   def list_models(provider) do
-    case @providers[provider] do
-      nil -> {:error, :unknown_provider}
-      mod -> mod.list_models()
-    end
+    with_provider(provider, &(&1.list_models()))
   end
 
   @spec embedding_model(provider()) :: {:ok, String.t()} | {:error, term()}
   def embedding_model(provider) do
+    with_provider(provider, fn mod -> {:ok, mod.embedding_model()} end)
+  end
+
+  defp with_provider(provider, fun) do
     case @providers[provider] do
       nil -> {:error, :unknown_provider}
-      mod -> {:ok, mod.embedding_model()}
+      mod -> fun.(mod)
     end
   end
 end
