@@ -41,7 +41,23 @@ elixir --version
 
 ### 2. PostgreSQL with pgvector
 
-Pearl uses PostgreSQL to store repository data and vector embeddings for search.
+Pearl uses PostgreSQL to store repository data and vector embeddings for search. The easiest way is Docker (recommended):
+
+```bash
+docker compose up -d
+```
+
+This starts PostgreSQL 18 with pgvector pre-installed. Data persists across restarts via a named volume.
+
+**Port conflict?** If port 5432 is already in use:
+
+```bash
+export PEARL_DB_PORT=5433
+docker compose up -d
+```
+
+<details>
+<summary>Alternative: Native install</summary>
 
 #### macOS (using Homebrew)
 
@@ -53,6 +69,8 @@ brew services start postgresql@16
 #### Other platforms
 
 See the [PostgreSQL download page](https://www.postgresql.org/download/) and [pgvector installation instructions](https://github.com/pgvector/pgvector#installation).
+
+</details>
 
 ### 3. LLM Provider
 
@@ -86,7 +104,13 @@ Pearl needs an LLM to generate wikis and answer questions. Choose one:
    cd pearl/pearl
    ```
 
-2. **Configure your LLM provider** by setting environment variables (either export directly in your terminal or add to a `.env` file to source later):
+2. **Start PostgreSQL** (if using Docker):
+
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Configure your LLM provider** by setting environment variables (either export directly in your terminal or add to a `.env` file to source later):
 
    ```bash
    # For OpenRouter (recommended)
@@ -99,12 +123,6 @@ Pearl needs an LLM to generate wikis and answer questions. Choose one:
    # export LLM_PROVIDER=ollama
    # export OLLAMA_HOST=http://localhost:11434
    # export OLLAMA_DEFAULT_MODEL=llama3.2:3b
-   ```
-
-3. **Install JavaScript dependencies:**
-
-   ```bash
-   cd assets && npm install && cd ..
    ```
 
 4. **Run setup:**
