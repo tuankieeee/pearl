@@ -71,7 +71,9 @@ defmodule Pearl.Rag do
       on_timeout: :kill_task
     )
     |> Stream.flat_map(fn
-      {:ok, chunks} -> chunks
+      {:ok, chunks} ->
+        chunks
+
       {:exit, reason} ->
         Logger.warning("File processing failed or timed out: #{inspect(reason)}")
         []

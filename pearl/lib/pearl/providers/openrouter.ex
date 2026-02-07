@@ -7,6 +7,7 @@ defmodule Pearl.Providers.OpenRouter do
 
   @base_url "https://openrouter.ai/api/v1"
 
+  @doc false
   def base_url, do: @base_url
 
   @impl true

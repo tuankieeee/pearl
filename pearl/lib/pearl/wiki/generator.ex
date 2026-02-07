@@ -29,7 +29,8 @@ defmodule Pearl.Wiki.Generator do
          _ <- broadcast_progress.("Analyzing repository structure..."),
          {:ok, wiki_structure} <- generate_structure(structure, provider, model),
          _ <- broadcast_progress.("Generating #{length(wiki_structure["pages"])} pages..."),
-         {:ok, pages} <- generate_pages(repo, structure, wiki_structure, provider, model, broadcast_progress) do
+         {:ok, pages} <-
+           generate_pages(repo, structure, wiki_structure, provider, model, broadcast_progress) do
       Phoenix.PubSub.broadcast(Pearl.PubSub, "wiki:#{repo.id}", {:complete, wiki_structure})
       {:ok, %{structure: wiki_structure, pages: pages, model_used: "#{provider}/#{model}"}}
     end

@@ -9,10 +9,10 @@ defmodule PearlWeb.WikiLive do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     repo =
-      (case Integer.parse(id) do
-         {int_id, ""} -> Repositories.get_repo(int_id)
-         _ -> nil
-       end) || raise(Ecto.NoResultsError, queryable: Repositories.RepoRecord)
+      case Integer.parse(id) do
+        {int_id, ""} -> Repositories.get_repo(int_id)
+        _ -> nil
+      end || raise(Ecto.NoResultsError, queryable: Repositories.RepoRecord)
 
     wiki_cache = Wiki.get_cached(repo)
 
@@ -146,6 +146,7 @@ defmodule PearlWeb.WikiLive do
                     placeholder="Ask a question..."
                     class="input input-bordered input-sm flex-1"
                     disabled={@ask_loading}
+                    phx-debounce="300"
                   />
                   <button type="submit" disabled={@ask_loading} class="btn btn-primary btn-sm">
                     <%= if @ask_loading do %>
@@ -231,6 +232,7 @@ defmodule PearlWeb.WikiLive do
       )
 
     pid = self()
+    repo = socket.assigns.repo
 
     # Get history (all messages except the last empty assistant placeholder)
     history =
@@ -239,7 +241,7 @@ defmodule PearlWeb.WikiLive do
       |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
 
     Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
-      case Rag.ask(socket.assigns.repo, question, stream: true, history: history) do
+      case Rag.ask(repo, question, stream: true, history: history) do
         {:ok, stream} ->
           Enum.each(stream, fn chunk ->
             send(pid, {:answer_chunk, chunk})

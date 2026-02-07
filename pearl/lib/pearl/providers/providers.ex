@@ -35,11 +35,11 @@ defmodule Pearl.Providers do
     end
   end
 
-  @spec embedding_model(provider()) :: String.t()
+  @spec embedding_model(provider()) :: {:ok, String.t()} | {:error, term()}
   def embedding_model(provider) do
     case @providers[provider] do
-      nil -> "unknown"
-      mod -> mod.embedding_model()
+      nil -> {:error, :unknown_provider}
+      mod -> {:ok, mod.embedding_model()}
     end
   end
 end

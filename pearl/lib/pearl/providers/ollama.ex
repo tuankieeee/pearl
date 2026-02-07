@@ -10,6 +10,9 @@ defmodule Pearl.Providers.Ollama do
 
   @behaviour Pearl.Providers.Provider
 
+  @doc """
+  Returns the Ollama API base URL from configuration or defaults to localhost.
+  """
   def base_url do
     Application.get_env(:pearl, :providers)[:ollama][:host] ||
       "http://localhost:11434"
@@ -87,6 +90,9 @@ defmodule Pearl.Providers.Ollama do
     end
   end
 
+  @doc """
+  Generates embeddings for a list of texts using Ollama's batch embed endpoint.
+  """
   @impl true
   def embed(texts) when is_list(texts) do
     # Use batched /api/embed endpoint (Ollama v0.4.0+)
@@ -112,6 +118,9 @@ defmodule Pearl.Providers.Ollama do
     end
   end
 
+  @doc """
+  Lists all available models from the Ollama server.
+  """
   @impl true
   def list_models do
     case Req.get("#{base_url()}/api/tags") do
@@ -126,6 +135,9 @@ defmodule Pearl.Providers.Ollama do
     end
   end
 
+  @doc """
+  Returns the configured embedding model name or defaults to nomic-embed-text.
+  """
   @impl true
   def embedding_model do
     Application.get_env(:pearl, :providers)[:ollama][:embedding_model] ||

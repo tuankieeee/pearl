@@ -17,12 +17,23 @@ defmodule Pearl.RagTest do
   end
 
   describe "index_repo/2 options" do
-    test "accepts batch_size and file_concurrency options" do
-      # Verify the function accepts the documented options without error
-      # (actual indexing requires external services, so we test the spec)
+    setup do
+      {:ok, repo} =
+        Repositories.create_repo(%{
+          url: "https://github.com/test/indexopts",
+          provider: "github",
+          owner: "test",
+          name: "indexopts"
+        })
+
+      {:ok, repo: repo}
+    end
+
+    test "accepts batch_size and file_concurrency options", %{repo: repo} do
+      # Repo has no local_path, so get_structure returns {:error, :not_cloned}
+      # This proves index_repo/2 is actually called with options
       opts = [batch_size: 50, file_concurrency: 5]
-      assert Keyword.get(opts, :batch_size) == 50
-      assert Keyword.get(opts, :file_concurrency) == 5
+      assert {:error, :not_cloned} = Rag.index_repo(repo, opts)
     end
   end
 
