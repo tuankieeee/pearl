@@ -114,7 +114,7 @@ defmodule PearlWeb.WikiLive do
 
               <div class="flex-1 overflow-y-auto p-4" id="ask-messages" phx-hook="ScrollToBottom">
                 <%= for {message, idx} <- Enum.with_index(@ask_messages) do %>
-                  <%= if message.role == "user" do %>
+                  <%= if message.role == :user do %>
                     <!-- User message: right-aligned, primary color -->
                     <div class="chat chat-end">
                       <div class="chat-bubble chat-bubble-primary">
@@ -224,61 +224,54 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_event("ask", %{"question" => question}, socket) when question != "" do
-    # Verify user still has access to the repository
-    repo = socket.assigns.repo
+    # Use repo from socket assigns - already validated during mount
+    # No user-level authorization needed; this is a single-user application
+    %{repo: repo} = socket.assigns
 
-    case Repositories.get_repo(repo.id) do
-      nil ->
-        {:noreply,
-         socket
-         |> put_flash(:error, "Repository no longer exists")
-         |> push_navigate(to: ~p"/")}
+    # Add user message and placeholder assistant message
+    messages =
+      socket.assigns.ask_messages ++
+        [
+          %{role: :user, content: question},
+          %{role: :assistant, content: ""}
+        ]
 
-      _repo ->
-        # Add user message and placeholder assistant message
-        messages =
-          socket.assigns.ask_messages ++
-            [
-              %{role: "user", content: question},
-              %{role: "assistant", content: ""}
-            ]
+    socket =
+      assign(socket,
+        ask_loading: true,
+        ask_messages: messages,
+        ask_current_input: ""
+      )
 
-        socket =
-          assign(socket,
-            ask_loading: true,
-            ask_messages: messages,
-            ask_current_input: ""
-          )
+    pid = self()
 
-        pid = self()
+    # Get history (all messages except the last empty assistant placeholder)
+    history =
+      socket.assigns.ask_messages
+      |> Enum.filter(fn msg -> msg.content != "" end)
+      |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
 
-        # Get history (all messages except the last empty assistant placeholder)
-        history =
-          socket.assigns.ask_messages
-          |> Enum.filter(fn msg -> msg.content != "" end)
-          |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
+    # Linked to LiveView - terminates if user navigates away
+    _ignore =
+      Task.Supervisor.start_child(
+        Pearl.TaskSupervisor,
+        fn ->
+          case Rag.ask(repo, question, stream: true, history: history) do
+            {:ok, stream} ->
+              Enum.each(stream, fn chunk ->
+                send(pid, {:answer_chunk, chunk})
+              end)
 
-        # Linked to LiveView - terminates if user navigates away
-        _ignore = Task.Supervisor.start_child(
-          Pearl.TaskSupervisor,
-          fn ->
-            case Rag.ask(repo, question, stream: true, history: history) do
-              {:ok, stream} ->
-                Enum.each(stream, fn chunk ->
-                  send(pid, {:answer_chunk, chunk})
-                end)
+              send(pid, :answer_complete)
 
-                send(pid, :answer_complete)
+            {:error, reason} ->
+              send(pid, {:answer_error, reason})
+          end
+        end,
+        link: true
+      )
 
-              {:error, reason} ->
-                send(pid, {:answer_error, reason})
-            end
-          end,
-          link: true
-        )
-
-        {:noreply, socket}
-    end
+    {:noreply, socket}
   end
 
   @impl true
@@ -299,7 +292,7 @@ defmodule PearlWeb.WikiLive do
 
         _ ->
           # No messages yet - create an assistant message
-          [%{role: "assistant", content: chunk}]
+          [%{role: :assistant, content: chunk}]
       end
 
     {:noreply, assign(socket, ask_messages: updated_messages)}
@@ -322,7 +315,7 @@ defmodule PearlWeb.WikiLive do
           init ++ [%{last | content: error_content}]
 
         _ ->
-          [%{role: "assistant", content: error_content}]
+          [%{role: :assistant, content: error_content}]
       end
 
     {:noreply,

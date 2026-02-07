@@ -66,7 +66,7 @@ defmodule Pearl.Wiki.Generator do
   defp generate_pages(repo, structure, wiki_structure, provider, model, on_progress) do
     total = length(wiki_structure["pages"])
 
-    pages =
+    {pages, errors} =
       wiki_structure["pages"]
       |> Enum.with_index(1)
       |> Task.async_stream(
@@ -82,18 +82,28 @@ defmodule Pearl.Wiki.Generator do
                 "Failed to generate wiki page '#{page_spec["id"]}' for repo #{repo.id}: #{inspect(reason)}"
               )
 
-              :error
+              {:error, page_spec["id"]}
           end
         end,
         max_concurrency: 4,
         timeout: 300_000
       )
-      |> Enum.reduce(%{}, fn
-        {:ok, {:ok, {page_id, content}}}, acc -> Map.put(acc, page_id, content)
-        _, acc -> acc
+      |> Enum.reduce({%{}, []}, fn
+        {:ok, {:ok, {page_id, content}}}, {pages, errors} ->
+          {Map.put(pages, page_id, content), errors}
+
+        {:ok, {:error, page_id}}, {pages, errors} ->
+          {pages, [page_id | errors]}
+
+        {:exit, reason}, {pages, errors} ->
+          Logger.error("Wiki page generation task crashed: #{inspect(reason)}")
+          {pages, [{:task_crashed, reason} | errors]}
       end)
 
-    {:ok, pages}
+    case errors do
+      [] -> {:ok, pages}
+      failed_pages -> {:error, {:page_generation_failed, Enum.reverse(failed_pages)}}
+    end
   end
 
   defp generate_page(repo, structure, page_spec, provider, model) do

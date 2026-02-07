@@ -341,6 +341,7 @@ defmodule PearlWeb.HomeLive do
     {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
   end
 
+  @impl true
   def handle_info({:EXIT, pid, {:shutdown, _}}, socket) do
     {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
   end
