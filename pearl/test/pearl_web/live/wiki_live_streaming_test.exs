@@ -98,7 +98,7 @@ defmodule PearlWeb.WikiLiveStreamingTest do
 
       # Initially, no loading indicator until question is submitted
       html = render(view)
-      refute html =~ "loading-infinity"
+      refute html =~ "loading-dots"
     end
   end
 

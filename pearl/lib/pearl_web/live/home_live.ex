@@ -1,4 +1,7 @@
 defmodule PearlWeb.HomeLive do
+  @moduledoc """
+  LiveView for the home page displaying repository list and clone form.
+  """
   use PearlWeb, :live_view
 
   alias Pearl.Repositories

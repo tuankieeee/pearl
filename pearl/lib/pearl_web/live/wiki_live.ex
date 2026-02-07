@@ -1,4 +1,7 @@
 defmodule PearlWeb.WikiLive do
+  @moduledoc """
+  LiveView for displaying generated wikis with RAG-powered Q&A chat panel.
+  """
   use PearlWeb, :live_view
 
   alias Pearl.Repositories
@@ -8,34 +11,29 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    repo =
-      case Integer.parse(id) do
-        {int_id, ""} ->
-          Repositories.get_repo(int_id) ||
-            raise(Ecto.NoResultsError, queryable: Repositories.RepoRecord)
+    with {int_id, ""} <- Integer.parse(id),
+         %{} = repo <- Repositories.get_repo(int_id) do
+      wiki_cache = Wiki.get_cached(repo)
 
-        _ ->
-          raise Ecto.NoResultsError, queryable: Repositories.RepoRecord
-      end
+      pages = if wiki_cache, do: wiki_cache.structure["pages"] || [], else: []
+      current_page_id = if length(pages) > 0, do: hd(pages)["id"], else: nil
 
-    wiki_cache = Wiki.get_cached(repo)
-
-    pages = if wiki_cache, do: wiki_cache.structure["pages"] || [], else: []
-    current_page_id = if length(pages) > 0, do: hd(pages)["id"], else: nil
-
-    {:ok,
-     assign(socket,
-       page_title: "#{repo.owner}/#{repo.name} - Pearl",
-       repo: repo,
-       wiki_cache: wiki_cache,
-       pages: pages,
-       current_page_id: current_page_id,
-       current_content: get_page_content(wiki_cache, current_page_id),
-       ask_open: false,
-       ask_messages: [],
-       ask_current_input: "",
-       ask_loading: false
-     )}
+      {:ok,
+       assign(socket,
+         page_title: "#{repo.owner}/#{repo.name} - Pearl",
+         repo: repo,
+         wiki_cache: wiki_cache,
+         pages: pages,
+         current_page_id: current_page_id,
+         current_content: get_page_content(wiki_cache, current_page_id),
+         ask_open: false,
+         ask_messages: [],
+         ask_current_input: "",
+         ask_loading: false
+       )}
+    else
+      _ -> raise Ecto.NoResultsError, queryable: Repositories.RepoRecord
+    end
   end
 
   @impl true
