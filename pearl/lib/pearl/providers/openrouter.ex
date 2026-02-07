@@ -50,14 +50,20 @@ defmodule Pearl.Providers.OpenRouter do
   end
 
   defp chat_stream(body, key) do
-    stream =
-      Stream.resource(
-        fn -> start_stream(body, key) end,
-        &next_chunk/1,
-        &finish_stream/1
-      )
+    case start_stream(body, key) do
+      {:ok, resp} ->
+        stream =
+          Stream.resource(
+            fn -> resp end,
+            &next_chunk/1,
+            &finish_stream/1
+          )
 
-    {:ok, stream}
+        {:ok, stream}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp start_stream(body, key) do
@@ -67,12 +73,10 @@ defmodule Pearl.Providers.OpenRouter do
            into: :self,
            receive_timeout: 60_000
          ) do
-      {:ok, resp} -> resp
-      {:error, _reason} -> :error
+      {:ok, resp} -> {:ok, resp}
+      {:error, reason} -> {:error, reason}
     end
   end
-
-  defp next_chunk(:error), do: {:halt, :error}
 
   defp next_chunk(%Req.Response{} = resp) do
     receive do

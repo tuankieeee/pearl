@@ -48,16 +48,16 @@ defmodule Pearl.Rag do
       # 2. Lazily chunk results (Stream.flat_map)
       # 3. Batch for embedding API (Stream.chunk_every)
       # 4. Reduce to count
-      count =
+      {count, failed?} =
         files
         |> stream_file_chunks(repo, concurrency)
         |> Stream.chunk_every(batch_size)
-        |> Enum.reduce(0, &process_batch(repo.id, &1, &2))
+        |> Enum.reduce({0, false}, &process_batch(repo.id, &1, &2))
 
       # Save the embedding model used for this repo
       Repositories.update_repo(repo, %{embedding_model: Config.embedding_model()})
 
-      {:ok, count}
+      if failed?, do: {:error, :embedding_failed}, else: {:ok, count}
     end
   end
 
@@ -87,14 +87,14 @@ defmodule Pearl.Rag do
     end
   end
 
-  defp process_batch(repo_id, batch, acc) do
+  defp process_batch(repo_id, batch, {acc, failed?}) do
     case embed_and_store_batch(repo_id, batch) do
       {:ok, n} ->
-        acc + n
+        {acc + n, failed?}
 
       {:error, reason} ->
         Logger.warning("Batch embedding failed: #{inspect(reason)}")
-        acc
+        {acc, true}
     end
   end
 
