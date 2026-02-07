@@ -110,3 +110,28 @@ PEARL_REPOS_PATH=~/.pearl/repos
 - **Frontend**: Phoenix LiveView 1.1, Tailwind CSS 4, daisyUI (luxury dark theme)
 - **LLM**: Ollama (local) or OpenRouter (cloud) with embedding support
 - **Vector Search**: pgvector with HNSW indexing
+
+## Release Process
+
+Run `/release` to create a new release. Use `/release --dry-run` to preview without making changes.
+
+The release skill automates:
+1. Analyzes commits since the last tag to determine version bump (MAJOR/MINOR/PATCH)
+2. Updates `version` in `pearl/mix.exs`
+3. Updates `CHANGELOG.md` with categorized commit entries
+4. Creates a git commit and annotated tag
+5. Pushes to origin and creates a GitHub release
+
+### Conventional Commits
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) to drive automated versioning:
+
+- `feat:` — new feature (bumps MINOR)
+- `fix:` — bug fix (bumps PATCH)
+- `docs:` — documentation changes
+- `refactor:` — code restructuring
+- `chore:` — maintenance tasks
+- `test:` — test additions/changes
+- `perf:` — performance improvements
+- `ci:` / `build:` / `style:` — other changes
+- `BREAKING CHANGE:` or `!:` suffix — breaking change (bumps MAJOR)
