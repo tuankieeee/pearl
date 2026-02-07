@@ -99,7 +99,11 @@ defmodule PearlWeb.HomeLive do
                         </div>
                         <div class="min-w-0">
                           <h3 class="font-bold text-base truncate">{repo.name}</h3>
-                          <.link href={repo.url} target="_blank" class="text-xs link link-primary opacity-70">
+                          <.link
+                            href={repo.url}
+                            target="_blank"
+                            class="text-xs link link-primary opacity-70"
+                          >
                             {repo.owner}/{repo.name}
                           </.link>
                         </div>
@@ -362,6 +366,7 @@ defmodule PearlWeb.HomeLive do
     {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
   end
 
+  @impl true
   def handle_info({:EXIT, crashed_pid, reason}, socket) do
     # A linked task crashed - terminate sibling tasks and clear generating state
     socket.assigns.linked_tasks

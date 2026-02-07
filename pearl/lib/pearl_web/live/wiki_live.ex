@@ -99,10 +99,13 @@ defmodule PearlWeb.WikiLive do
           <%= if @ask_open do %>
             <aside class="w-[36rem] bg-gradient-to-b from-base-100 to-base-200 border-l border-base-300/50 flex flex-col">
               <div class="px-5 py-4 border-b border-primary/20 bg-gradient-to-r from-primary/5 to-transparent flex items-center justify-between">
-                <h3 class="text-sm font-semibold tracking-wide uppercase text-primary/80" style="font-family: var(--font-heading)">
+                <h3 class="text-sm font-semibold tracking-wide uppercase text-primary/80 font-[family-name:var(--font-heading)]">
                   Ask about the codebase
                 </h3>
-                <button phx-click="toggle_ask" class="btn btn-ghost btn-sm btn-circle text-base-content/50 hover:text-base-content">
+                <button
+                  phx-click="toggle_ask"
+                  class="btn btn-ghost btn-sm btn-circle text-base-content/50 hover:text-base-content"
+                >
                   <.icon name="hero-x-mark" class="size-4" />
                 </button>
               </div>
@@ -111,7 +114,10 @@ defmodule PearlWeb.WikiLive do
                 <%= if @ask_messages == [] do %>
                   <div class="flex items-center justify-center h-full">
                     <div class="text-center">
-                      <.icon name="hero-chat-bubble-left-right" class="size-12 text-primary/20 mx-auto mb-4" />
+                      <.icon
+                        name="hero-chat-bubble-left-right"
+                        class="size-12 text-primary/20 mx-auto mb-4"
+                      />
                       <p class="text-base-content/30 text-sm">Ask anything about the codebase</p>
                     </div>
                   </div>
@@ -148,9 +154,11 @@ defmodule PearlWeb.WikiLive do
                     name="question"
                     value={@ask_current_input}
                     placeholder="Ask anything about this codebase..."
+                    id="ask-input"
                     class="input input-bordered flex-1 bg-base-300/50 focus:border-primary/50"
                     disabled={@ask_loading}
                     phx-debounce="300"
+                    phx-hook="AutoFocus"
                   />
                   <button type="submit" disabled={@ask_loading} class="btn btn-primary btn-circle">
                     <%= if @ask_loading do %>
@@ -196,13 +204,14 @@ defmodule PearlWeb.WikiLive do
           </nav>
 
           <div class="p-4 border-t border-base-300">
-            <button phx-click="toggle_ask" class="btn btn-ghost btn-sm w-full gap-2 text-base-content/60 hover:text-base-content">
+            <button
+              phx-click="toggle_ask"
+              class="btn btn-ghost btn-sm w-full gap-2 text-base-content/60 hover:text-base-content"
+            >
               <%= if @ask_open do %>
-                <.icon name="hero-x-mark" class="size-4" />
-                Close Chat
+                <.icon name="hero-x-mark" class="size-4" /> Close Chat
               <% else %>
-                <.icon name="hero-chat-bubble-left-right" class="size-4" />
-                Chat with AI
+                <.icon name="hero-chat-bubble-left-right" class="size-4" /> Chat with AI
               <% end %>
             </button>
           </div>
@@ -257,7 +266,7 @@ defmodule PearlWeb.WikiLive do
       |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
 
     # Linked to LiveView - terminates if user navigates away
-    _ignore =
+    _ =
       Task.Supervisor.start_child(
         Pearl.TaskSupervisor,
         fn ->
@@ -305,7 +314,10 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_info(:answer_complete, socket) do
-    {:noreply, assign(socket, ask_loading: false)}
+    {:noreply,
+     socket
+     |> assign(ask_loading: false)
+     |> push_event("focus-input", %{})}
   end
 
   @impl true
@@ -324,10 +336,9 @@ defmodule PearlWeb.WikiLive do
       end
 
     {:noreply,
-     assign(socket,
-       ask_loading: false,
-       ask_messages: updated_messages
-     )}
+     socket
+     |> assign(ask_loading: false, ask_messages: updated_messages)
+     |> push_event("focus-input", %{})}
   end
 
   defp get_page_content(nil, _), do: ""

@@ -111,5 +111,4 @@ defmodule PearlWeb.Layouts do
     </div>
     """
   end
-
 end
