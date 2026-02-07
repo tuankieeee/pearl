@@ -43,6 +43,9 @@ defmodule Pearl.Repositories.RepoRecord do
     :pushed_at
   ]
 
+  @doc """
+  Creates a changeset for a repository record.
+  """
   def changeset(repo_record, attrs) do
     repo_record
     |> cast(attrs, @required_fields ++ @optional_fields)

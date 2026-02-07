@@ -7,8 +7,6 @@ defmodule Pearl.Providers.OpenRouter do
 
   @base_url "https://openrouter.ai/api/v1"
 
-  defp base_url, do: @base_url
-
   @impl true
   def chat(model, messages, opts \\ []) do
     case api_key() do

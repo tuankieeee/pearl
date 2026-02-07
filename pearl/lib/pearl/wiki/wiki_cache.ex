@@ -17,6 +17,7 @@ defmodule Pearl.Wiki.WikiCache do
     timestamps()
   end
 
+  @doc "Builds a changeset for creating or updating a wiki cache."
   def changeset(wiki_cache, attrs) do
     wiki_cache
     |> cast(attrs, [:repo_id, :structure, :pages, :model_used])

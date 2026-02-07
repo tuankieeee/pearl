@@ -235,17 +235,19 @@ defmodule PearlWeb.HomeLive do
     end
   end
 
+  @impl true
   def handle_event("request_delete", %{"id" => id}, socket) do
     case Integer.parse(id) do
       {int_id, ""} -> {:noreply, assign(socket, confirm_delete_id: int_id)}
       _ -> {:noreply, socket}
     end
   end
-
+  @impl true
   def handle_event("cancel_delete", _params, socket) do
     {:noreply, assign(socket, confirm_delete_id: nil)}
   end
 
+  @impl true
   def handle_event("confirm_delete", %{"id" => id}, socket) do
     case Integer.parse(id) do
       {repo_id, ""} ->

@@ -268,6 +268,7 @@ defmodule PearlWeb.WikiLive do
     end
   end
 
+  @impl true
   def handle_event("ask", _params, socket) do
     # Empty question - do nothing
     {:noreply, socket}

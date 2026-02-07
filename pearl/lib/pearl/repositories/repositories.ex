@@ -155,7 +155,10 @@ defmodule Pearl.Repositories do
             }
 
           {:error, reason} ->
-            Logger.warning("Failed to decode GitHub API response for #{owner}/#{name}: #{inspect(reason)}")
+            Logger.warning(
+              "Failed to decode GitHub API response for #{owner}/#{name}: #{inspect(reason)}"
+            )
+
             %{}
         end
 
@@ -185,7 +188,10 @@ defmodule Pearl.Repositories do
             }
 
           {:error, reason} ->
-            Logger.warning("Failed to decode GitLab API response for #{owner}/#{name}: #{inspect(reason)}")
+            Logger.warning(
+              "Failed to decode GitLab API response for #{owner}/#{name}: #{inspect(reason)}"
+            )
+
             %{}
         end
 

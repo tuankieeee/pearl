@@ -19,6 +19,9 @@ defmodule Pearl.Rag.Embedding do
     timestamps(updated_at: false)
   end
 
+  @doc """
+  Creates a changeset for an embedding record.
+  """
   def changeset(embedding, attrs) do
     embedding
     |> cast(attrs, [:repo_id, :file_path, :chunk_index, :content, :embedding, :token_count])
