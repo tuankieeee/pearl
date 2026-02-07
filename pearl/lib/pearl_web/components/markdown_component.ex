@@ -5,31 +5,36 @@ defmodule PearlWeb.MarkdownComponent do
 
   use Phoenix.Component
 
-  @mermaid_regex ~r/```mermaid\n([\s\S]*?)```/
+  @mermaid_regex ~r/```mermaid\n(?<content>[\s\S]*?)```/
+  @mermaid_placeholder "MERMAID_BLOCK_PLACEHOLDER"
 
   @spec render_markdown(String.t()) :: String.t()
   def render_markdown(markdown) when is_binary(markdown) do
     markdown
     |> Earmark.as_html!(code_class_prefix: "language-")
+    |> HtmlSanitizeEx.markdown_html()
   end
 
   def render_markdown(_), do: ""
 
   @spec extract_mermaid(String.t()) :: {String.t(), [String.t()]}
   def extract_mermaid(markdown) do
-    mermaid_blocks = Regex.scan(@mermaid_regex, markdown) |> Enum.map(&Enum.at(&1, 1))
+    mermaid_blocks =
+      Regex.scan(@mermaid_regex, markdown, capture: :all_names)
+      |> Enum.map(fn [content] -> content end)
 
     html =
       markdown
       |> replace_mermaid_blocks()
       |> render_markdown()
+      |> String.replace(@mermaid_placeholder, ~s(<div class="mermaid-placeholder"></div>))
 
     {html, mermaid_blocks}
   end
 
   defp replace_mermaid_blocks(markdown) do
     Regex.replace(@mermaid_regex, markdown, fn _, _content ->
-      ~s(<div class="mermaid-placeholder"></div>)
+      @mermaid_placeholder
     end)
   end
 

@@ -1,9 +1,34 @@
 defmodule Pearl.Repositories.RepoRecord do
+  @moduledoc """
+  Ecto schema for repository metadata and status tracking.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 
   alias Pearl.Wiki.WikiCache
   alias Pearl.Rag.Embedding
+
+  @type t :: %__MODULE__{
+          id: integer() | nil,
+          url: String.t() | nil,
+          provider: String.t() | nil,
+          owner: String.t() | nil,
+          name: String.t() | nil,
+          branch: String.t() | nil,
+          local_path: String.t() | nil,
+          status: String.t() | nil,
+          file_count: integer() | nil,
+          embedding_model: String.t() | nil,
+          description: String.t() | nil,
+          stars: integer() | nil,
+          language: String.t() | nil,
+          pushed_at: DateTime.t() | nil,
+          wiki_caches: [WikiCache.t()] | Ecto.Association.NotLoaded.t(),
+          embeddings: [Embedding.t()] | Ecto.Association.NotLoaded.t(),
+          inserted_at: DateTime.t() | nil,
+          updated_at: DateTime.t() | nil
+        }
 
   schema "repos" do
     field :url, :string
@@ -39,6 +64,9 @@ defmodule Pearl.Repositories.RepoRecord do
     :pushed_at
   ]
 
+  @doc """
+  Creates a changeset for a repository record.
+  """
   def changeset(repo_record, attrs) do
     repo_record
     |> cast(attrs, @required_fields ++ @optional_fields)

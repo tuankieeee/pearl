@@ -7,8 +7,6 @@ defmodule Pearl.Providers.OpenRouter do
 
   @base_url "https://openrouter.ai/api/v1"
 
-  def base_url, do: @base_url
-
   @impl true
   def chat(model, messages, opts \\ []) do
     case api_key() do
@@ -43,8 +41,8 @@ defmodule Pearl.Providers.OpenRouter do
       {:ok, %{status: 429}} ->
         {:error, :rate_limited}
 
-      {:ok, %{status: status, body: body}} ->
-        {:error, {:http_error, status, body}}
+      {:ok, %{status: status, body: resp_body}} ->
+        {:error, {:http_error, status, resp_body}}
 
       {:error, reason} ->
         {:error, reason}
@@ -52,26 +50,32 @@ defmodule Pearl.Providers.OpenRouter do
   end
 
   defp chat_stream(body, key) do
-    stream =
-      Stream.resource(
-        fn -> start_stream(body, key) end,
-        &next_chunk/1,
-        &finish_stream/1
-      )
+    case start_stream(body, key) do
+      {:ok, resp} ->
+        stream =
+          Stream.resource(
+            fn -> resp end,
+            &next_chunk/1,
+            &finish_stream/1
+          )
 
-    {:ok, stream}
+        {:ok, stream}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp start_stream(body, key) do
-    {:ok, resp} =
-      Req.post("#{@base_url}/chat/completions",
-        json: body,
-        headers: headers(key),
-        into: :self,
-        receive_timeout: 60_000
-      )
-
-    resp
+    case Req.post("#{@base_url}/chat/completions",
+           json: body,
+           headers: headers(key),
+           into: :self,
+           receive_timeout: 60_000
+         ) do
+      {:ok, resp} -> {:ok, resp}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp next_chunk(%Req.Response{} = resp) do
@@ -84,6 +88,9 @@ defmodule Pearl.Providers.OpenRouter do
 
       {_ref, :done} ->
         {:halt, resp}
+
+      _unexpected ->
+        {[], resp}
     after
       30_000 -> {:halt, resp}
     end
@@ -142,8 +149,8 @@ defmodule Pearl.Providers.OpenRouter do
           {:ok, %{status: 401}} ->
             {:error, :invalid_api_key}
 
-          {:ok, %{status: status, body: body}} ->
-            {:error, {:http_error, status, body}}
+          {:ok, %{status: status, body: resp_body}} ->
+            {:error, {:http_error, status, resp_body}}
 
           {:error, reason} ->
             {:error, reason}
@@ -166,8 +173,8 @@ defmodule Pearl.Providers.OpenRouter do
 
             {:ok, chat_models}
 
-          {:ok, %{status: status, body: body}} ->
-            {:error, {:http_error, status, body}}
+          {:ok, %{status: status, body: resp_body}} ->
+            {:error, {:http_error, status, resp_body}}
 
           {:error, reason} ->
             {:error, reason}

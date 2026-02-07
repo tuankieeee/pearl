@@ -3,6 +3,8 @@ defmodule Pearl.Repositories do
   The Repositories context handles git repository cloning and analysis.
   """
 
+  require Logger
+
   import Ecto.Query
   alias Pearl.Repo
   alias Pearl.Repositories.{Git, RepoRecord}
@@ -70,12 +72,12 @@ defmodule Pearl.Repositories do
     with {:ok, parsed} <- Git.parse_url(url),
          {:ok, repo} <- find_or_create_repo(url, parsed),
          {:ok, repo} <- update_status(repo, "cloning"),
-         metadata <- fetch_metadata(repo),
-         target_path <- repo_path(repo),
+         target_path = repo_path(repo),
+         metadata = fetch_metadata(repo),
          :ok <- ensure_parent_dir(target_path),
          {:ok, _} <- Git.clone(url, target_path, opts),
          {:ok, files} <- Git.list_files(target_path),
-         attrs <-
+         attrs =
            Map.merge(metadata, %{
              local_path: target_path,
              file_count: length(files),
@@ -96,12 +98,12 @@ defmodule Pearl.Repositories do
   @spec clone_existing(RepoRecord.t(), keyword()) :: {:ok, RepoRecord.t()} | {:error, term()}
   def clone_existing(%RepoRecord{} = repo, opts \\ []) do
     with {:ok, repo} <- update_status(repo, "cloning"),
-         target_path <- repo_path(repo),
+         target_path = repo_path(repo),
          :ok <- ensure_parent_dir(target_path),
          :ok <- maybe_remove_existing(target_path),
          {:ok, _} <- Git.clone(repo.url, target_path, opts),
          {:ok, files} <- Git.list_files(target_path),
-         attrs <- %{
+         attrs = %{
            local_path: target_path,
            file_count: length(files),
            status: "ready"
@@ -139,49 +141,46 @@ defmodule Pearl.Repositories do
 
   defp fetch_metadata(%RepoRecord{provider: "github", owner: owner, name: name}) do
     url = "https://api.github.com/repos/#{owner}/#{name}"
-    headers = [{"Accept", "application/vnd.github.v3+json"}, {"User-Agent", "Pearl-Wiki"}]
+    headers = [{"accept", "application/vnd.github.v3+json"}, {"user-agent", "Pearl-Wiki"}]
 
-    case :httpc.request(:get, {String.to_charlist(url), headers}, [], body_format: :binary) do
-      {:ok, {{_, 200, _}, _, body}} ->
-        case Jason.decode(body) do
-          {:ok, data} ->
-            %{
-              description: data["description"],
-              stars: data["stargazers_count"],
-              language: data["language"],
-              pushed_at: parse_datetime(data["pushed_at"])
-            }
+    case Req.get(url, headers: headers) do
+      {:ok, %Req.Response{status: 200, body: data}} ->
+        %{
+          description: data["description"],
+          stars: data["stargazers_count"],
+          language: data["language"],
+          pushed_at: parse_datetime(data["pushed_at"])
+        }
 
-          _ ->
-            %{}
-        end
+      {:ok, %Req.Response{status: status, body: body}} ->
+        Logger.warning("GitHub API returned #{status} for #{owner}/#{name}: #{inspect(body)}")
+        %{}
 
-      _ ->
+      {:error, reason} ->
+        Logger.warning("GitHub API request failed for #{owner}/#{name}: #{inspect(reason)}")
         %{}
     end
   end
 
   defp fetch_metadata(%RepoRecord{provider: "gitlab", owner: owner, name: name}) do
-    encoded_path = URI.encode("#{owner}/#{name}", &(&1 != ?/))
-    url = "https://gitlab.com/api/v4/projects/#{URI.encode_www_form(encoded_path)}"
-    headers = [{"User-Agent", "Pearl-Wiki"}]
+    url = "https://gitlab.com/api/v4/projects/#{URI.encode_www_form("#{owner}/#{name}")}"
+    headers = [{"user-agent", "Pearl-Wiki"}]
 
-    case :httpc.request(:get, {String.to_charlist(url), headers}, [], body_format: :binary) do
-      {:ok, {{_, 200, _}, _, body}} ->
-        case Jason.decode(body) do
-          {:ok, data} ->
-            %{
-              description: data["description"],
-              stars: data["star_count"],
-              language: nil,
-              pushed_at: parse_datetime(data["last_activity_at"])
-            }
+    case Req.get(url, headers: headers) do
+      {:ok, %Req.Response{status: 200, body: data}} ->
+        %{
+          description: data["description"],
+          stars: data["star_count"],
+          language: nil,
+          pushed_at: parse_datetime(data["last_activity_at"])
+        }
 
-          _ ->
-            %{}
-        end
+      {:ok, %Req.Response{status: status, body: body}} ->
+        Logger.warning("GitLab API returned #{status} for #{owner}/#{name}: #{inspect(body)}")
+        %{}
 
-      _ ->
+      {:error, reason} ->
+        Logger.warning("GitLab API request failed for #{owner}/#{name}: #{inspect(reason)}")
         %{}
     end
   end
@@ -218,6 +217,17 @@ defmodule Pearl.Repositories do
     |> File.mkdir_p()
   end
 
+  @spec flatten_structure(map(), String.t()) :: [String.t()]
+  def flatten_structure(structure, prefix \\ "") do
+    Enum.flat_map(structure, fn
+      {name, :file} ->
+        [Path.join(prefix, name)]
+
+      {name, children} when is_map(children) ->
+        flatten_structure(children, Path.join(prefix, name))
+    end)
+  end
+
   @spec get_structure(RepoRecord.t()) :: {:ok, map()} | {:error, term()}
   def get_structure(%RepoRecord{local_path: nil}), do: {:error, :not_cloned}
 
@@ -252,10 +262,15 @@ defmodule Pearl.Repositories do
   def read_file(%RepoRecord{local_path: nil}, _path), do: {:error, :not_cloned}
 
   def read_file(%RepoRecord{local_path: repo_path}, file_path) do
-    full_path = Path.join(repo_path, file_path)
+    repo_root = Path.expand(repo_path)
+    full_path = Path.expand(file_path, repo_root)
 
-    case File.read(full_path) do
-      {:ok, content} -> {:ok, content}
+    with true <- String.starts_with?(full_path, repo_root <> "/"),
+         {:ok, info} <- File.lstat(full_path),
+         true <- info.type != :symlink do
+      File.read(full_path)
+    else
+      false -> {:error, :path_traversal}
       {:error, reason} -> {:error, reason}
     end
   end

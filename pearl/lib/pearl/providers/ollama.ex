@@ -1,17 +1,26 @@
 defmodule Pearl.Providers.Ollama do
   @moduledoc """
   Ollama LLM provider client.
+
+  ## Requirements
+
+  Requires Ollama v0.4.0+ for batch embedding support via the `/api/embed` endpoint.
+  Earlier versions only support single-text embedding via `/api/embeddings`.
   """
 
   @behaviour Pearl.Providers.Provider
 
+  @doc """
+  Returns the Ollama API base URL from configuration or defaults to localhost.
+  """
+  @spec base_url() :: String.t()
   def base_url do
     Application.get_env(:pearl, :providers)[:ollama][:host] ||
       "http://localhost:11434"
   end
 
   @impl true
-  def chat(model, messages, opts \\ []) do
+  def chat(model, messages, opts) do
     body = %{
       model: model,
       messages: messages,
@@ -29,8 +38,8 @@ defmodule Pearl.Providers.Ollama do
       {:ok, %{status: 200, body: %{"message" => %{"content" => content}}}} ->
         {:ok, content}
 
-      {:ok, %{status: status, body: body}} ->
-        {:error, {:http_error, status, body}}
+      {:ok, %{status: status, body: resp_body}} ->
+        {:error, {:http_error, status, resp_body}}
 
       {:error, reason} ->
         {:error, reason}
@@ -38,25 +47,31 @@ defmodule Pearl.Providers.Ollama do
   end
 
   defp chat_stream(body) do
-    stream =
-      Stream.resource(
-        fn -> start_stream(body) end,
-        &next_chunk/1,
-        &finish_stream/1
-      )
+    case start_stream(body) do
+      {:ok, resp} ->
+        stream =
+          Stream.resource(
+            fn -> resp end,
+            &next_chunk/1,
+            &finish_stream/1
+          )
 
-    {:ok, stream}
+        {:ok, stream}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp start_stream(body) do
-    {:ok, resp} =
-      Req.post("#{base_url()}/api/chat",
-        json: body,
-        into: :self,
-        receive_timeout: 60_000
-      )
-
-    resp
+    case Req.post("#{base_url()}/api/chat",
+           json: body,
+           into: :self,
+           receive_timeout: 60_000
+         ) do
+      {:ok, resp} -> {:ok, resp}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   defp next_chunk(%Req.Response{} = resp) do
@@ -75,52 +90,62 @@ defmodule Pearl.Providers.Ollama do
 
       {_ref, :done} ->
         {:halt, resp}
+
+      _unexpected ->
+        {[], resp}
     after
       30_000 -> {:halt, resp}
     end
   end
 
+  @doc """
+  Generates embeddings for a list of texts using Ollama's batch embed endpoint.
+  """
   @impl true
-  def embed(texts) do
-    embeddings =
-      Enum.map(texts, fn text ->
-        case Req.post("#{base_url()}/api/embeddings",
-               json: %{
-                 model: embedding_model(),
-                 prompt: text
-               },
-               receive_timeout: 120_000
-             ) do
-          {:ok, %{status: 200, body: %{"embedding" => embedding}}} ->
-            embedding
+  def embed(texts) when is_list(texts) do
+    # Use batched /api/embed endpoint (Ollama v0.4.0+)
+    # This makes a single API call for all texts instead of N calls
+    body = %{
+      model: embedding_model(),
+      input: texts
+    }
 
-          {:ok, %{status: status, body: body}} ->
-            throw({:error, {:http_error, status, body}})
+    # Increased timeout (5 min) to handle large batches which may take longer
+    case Req.post("#{base_url()}/api/embed",
+           json: body,
+           receive_timeout: 300_000
+         ) do
+      {:ok, %{status: 200, body: %{"embeddings" => embeddings}}} ->
+        {:ok, embeddings}
 
-          {:error, reason} ->
-            throw({:error, reason})
-        end
-      end)
-
-    {:ok, embeddings}
-  catch
-    {:error, reason} -> {:error, reason}
-  end
-
-  @impl true
-  def list_models do
-    case Req.get("#{base_url()}/api/tags") do
-      {:ok, %{status: 200, body: %{"models" => models}}} ->
-        {:ok, models}
-
-      {:ok, %{status: status, body: body}} ->
-        {:error, {:http_error, status, body}}
+      {:ok, %{status: status, body: resp_body}} ->
+        {:error, {:http_error, status, resp_body}}
 
       {:error, reason} ->
         {:error, reason}
     end
   end
 
+  @doc """
+  Lists all available models from the Ollama server.
+  """
+  @impl true
+  def list_models do
+    case Req.get("#{base_url()}/api/tags") do
+      {:ok, %{status: 200, body: %{"models" => models}}} ->
+        {:ok, models}
+
+      {:ok, %{status: status, body: resp_body}} ->
+        {:error, {:http_error, status, resp_body}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Returns the configured embedding model name or defaults to nomic-embed-text.
+  """
   @impl true
   def embedding_model do
     Application.get_env(:pearl, :providers)[:ollama][:embedding_model] ||

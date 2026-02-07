@@ -9,7 +9,14 @@ defmodule PearlWeb.WikiLive do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     repo =
-      Repositories.get_repo(id) || raise Ecto.NoResultsError, queryable: Repositories.RepoRecord
+      case Integer.parse(id) do
+        {int_id, ""} ->
+          Repositories.get_repo(int_id) ||
+            raise(Ecto.NoResultsError, queryable: Repositories.RepoRecord)
+
+        _ ->
+          raise Ecto.NoResultsError, queryable: Repositories.RepoRecord
+      end
 
     wiki_cache = Wiki.get_cached(repo)
 
@@ -27,8 +34,7 @@ defmodule PearlWeb.WikiLive do
        ask_open: false,
        ask_messages: [],
        ask_current_input: "",
-       ask_loading: false,
-       ask_streaming: false
+       ask_loading: false
      )}
   end
 
@@ -108,7 +114,7 @@ defmodule PearlWeb.WikiLive do
 
               <div class="flex-1 overflow-y-auto p-4" id="ask-messages" phx-hook="ScrollToBottom">
                 <%= for {message, idx} <- Enum.with_index(@ask_messages) do %>
-                  <%= if message.role == "user" do %>
+                  <%= if message.role == :user do %>
                     <!-- User message: right-aligned, primary color -->
                     <div class="chat chat-end">
                       <div class="chat-bubble chat-bubble-primary">
@@ -143,6 +149,7 @@ defmodule PearlWeb.WikiLive do
                     placeholder="Ask a question..."
                     class="input input-bordered input-sm flex-1"
                     disabled={@ask_loading}
+                    phx-debounce="300"
                   />
                   <button type="submit" disabled={@ask_loading} class="btn btn-primary btn-sm">
                     <%= if @ask_loading do %>
@@ -200,8 +207,14 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_event("select_page", %{"id" => page_id}, socket) do
-    content = get_page_content(socket.assigns.wiki_cache, page_id)
-    {:noreply, assign(socket, current_page_id: page_id, current_content: content)}
+    valid_page_ids = Enum.map(socket.assigns.pages, & &1["id"])
+
+    if page_id in valid_page_ids do
+      content = get_page_content(socket.assigns.wiki_cache, page_id)
+      {:noreply, assign(socket, current_page_id: page_id, current_content: content)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -211,18 +224,19 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_event("ask", %{"question" => question}, socket) when question != "" do
+    %{repo: repo} = socket.assigns
+
     # Add user message and placeholder assistant message
     messages =
       socket.assigns.ask_messages ++
         [
-          %{role: "user", content: question},
-          %{role: "assistant", content: ""}
+          %{role: :user, content: question},
+          %{role: :assistant, content: ""}
         ]
 
     socket =
       assign(socket,
         ask_loading: true,
-        ask_streaming: false,
         ask_messages: messages,
         ask_current_input: ""
       )
@@ -235,23 +249,30 @@ defmodule PearlWeb.WikiLive do
       |> Enum.filter(fn msg -> msg.content != "" end)
       |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
 
-    Task.start(fn ->
-      case Rag.ask(socket.assigns.repo, question, stream: true, history: history) do
-        {:ok, stream} ->
-          Enum.each(stream, fn chunk ->
-            send(pid, {:answer_chunk, chunk})
-          end)
+    # Linked to LiveView - terminates if user navigates away
+    _ignore =
+      Task.Supervisor.start_child(
+        Pearl.TaskSupervisor,
+        fn ->
+          case Rag.ask(repo, question, stream: true, history: history) do
+            {:ok, stream} ->
+              Enum.each(stream, fn chunk ->
+                send(pid, {:answer_chunk, chunk})
+              end)
 
-          send(pid, :answer_complete)
+              send(pid, :answer_complete)
 
-        {:error, reason} ->
-          send(pid, {:answer_error, reason})
-      end
-    end)
+            {:error, reason} ->
+              send(pid, {:answer_error, reason})
+          end
+        end,
+        link: true
+      )
 
     {:noreply, socket}
   end
 
+  @impl true
   def handle_event("ask", _params, socket) do
     # Empty question - do nothing
     {:noreply, socket}
@@ -269,10 +290,10 @@ defmodule PearlWeb.WikiLive do
 
         _ ->
           # No messages yet - create an assistant message
-          [%{role: "assistant", content: chunk}]
+          [%{role: :assistant, content: chunk}]
       end
 
-    {:noreply, assign(socket, ask_streaming: true, ask_messages: updated_messages)}
+    {:noreply, assign(socket, ask_messages: updated_messages)}
   end
 
   @impl true
@@ -292,13 +313,12 @@ defmodule PearlWeb.WikiLive do
           init ++ [%{last | content: error_content}]
 
         _ ->
-          [%{role: "assistant", content: error_content}]
+          [%{role: :assistant, content: error_content}]
       end
 
     {:noreply,
      assign(socket,
        ask_loading: false,
-       ask_streaming: false,
        ask_messages: updated_messages
      )}
   end

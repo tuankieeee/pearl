@@ -3,6 +3,8 @@ defmodule Pearl.Wiki.Generator do
   Orchestrates wiki generation from a repository.
   """
 
+  require Logger
+
   alias Pearl.Wiki.Prompts
   alias Pearl.Providers
   alias Pearl.Repositories
@@ -29,7 +31,8 @@ defmodule Pearl.Wiki.Generator do
          _ <- broadcast_progress.("Analyzing repository structure..."),
          {:ok, wiki_structure} <- generate_structure(structure, provider, model),
          _ <- broadcast_progress.("Generating #{length(wiki_structure["pages"])} pages..."),
-         {:ok, pages} <- generate_pages(repo, wiki_structure, provider, model, broadcast_progress) do
+         {:ok, pages} <-
+           generate_pages(repo, structure, wiki_structure, provider, model, broadcast_progress) do
       Phoenix.PubSub.broadcast(Pearl.PubSub, "wiki:#{repo.id}", {:complete, wiki_structure})
       {:ok, %{structure: wiki_structure, pages: pages, model_used: "#{provider}/#{model}"}}
     end
@@ -60,29 +63,51 @@ defmodule Pearl.Wiki.Generator do
     end
   end
 
-  defp generate_pages(repo, wiki_structure, provider, model, on_progress) do
-    pages =
+  defp generate_pages(repo, structure, wiki_structure, provider, model, on_progress) do
+    total = length(wiki_structure["pages"])
+
+    {pages, errors} =
       wiki_structure["pages"]
       |> Enum.with_index(1)
-      |> Enum.reduce(%{}, fn {page_spec, index}, acc ->
-        page_id = page_spec["id"]
+      |> Task.async_stream(
+        fn {page_spec, index} ->
+          on_progress.("Generating page #{index}/#{total}: #{page_spec["title"]}...")
 
-        on_progress.(
-          "Generating page #{index}/#{length(wiki_structure["pages"])}: #{page_spec["title"]}..."
-        )
+          case generate_page(repo, structure, page_spec, provider, model) do
+            {:ok, content} ->
+              {:ok, {page_spec["id"], content}}
 
-        case generate_page(repo, page_spec, provider, model) do
-          {:ok, content} -> Map.put(acc, page_id, content)
-          _ -> acc
-        end
+            {:error, reason} ->
+              Logger.error(
+                "Failed to generate wiki page '#{page_spec["id"]}' for repo #{repo.id}: #{inspect(reason)}"
+              )
+
+              {:error, page_spec["id"]}
+          end
+        end,
+        max_concurrency: 4,
+        timeout: 300_000
+      )
+      |> Enum.reduce({%{}, []}, fn
+        {:ok, {:ok, {page_id, content}}}, {pages, errors} ->
+          {Map.put(pages, page_id, content), errors}
+
+        {:ok, {:error, page_id}}, {pages, errors} ->
+          {pages, [page_id | errors]}
+
+        {:exit, reason}, {pages, errors} ->
+          Logger.error("Wiki page generation task crashed: #{inspect(reason)}")
+          {pages, [{:task_crashed, reason} | errors]}
       end)
 
-    {:ok, pages}
+    case errors do
+      [] -> {:ok, pages}
+      failed_pages -> {:error, {:page_generation_failed, Enum.reverse(failed_pages)}}
+    end
   end
 
-  defp generate_page(repo, page_spec, provider, model) do
-    {:ok, structure} = Repositories.get_structure(repo)
-    all_files = flatten_structure(structure, "")
+  defp generate_page(repo, structure, page_spec, provider, model) do
+    all_files = Repositories.flatten_structure(structure)
 
     page_type = determine_page_type(page_spec)
     keywords = extract_keywords(page_spec)
@@ -174,8 +199,6 @@ defmodule Pearl.Wiki.Generator do
       filename = Path.basename(path)
       path_lower = String.downcase(path)
 
-      base_score = 0
-
       # Score based on page type
       type_score =
         case page_type do
@@ -229,17 +252,7 @@ defmodule Pearl.Wiki.Generator do
           true -> 0
         end
 
-      {path, base_score + type_score + keyword_score + importance_score}
-    end)
-  end
-
-  defp flatten_structure(structure, prefix) do
-    Enum.flat_map(structure, fn
-      {name, :file} ->
-        [Path.join(prefix, name)]
-
-      {name, children} when is_map(children) ->
-        flatten_structure(children, Path.join(prefix, name))
+      {path, type_score + keyword_score + importance_score}
     end)
   end
 end

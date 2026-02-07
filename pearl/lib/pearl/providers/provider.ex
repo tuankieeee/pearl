@@ -3,7 +3,8 @@ defmodule Pearl.Providers.Provider do
   Behaviour defining the interface for LLM providers.
   """
 
-  @type message :: %{role: String.t(), content: String.t()}
+  @type role :: :system | :user | :assistant
+  @type message :: %{role: role(), content: String.t()}
   @type chat_opts :: [stream: boolean()]
   @type embed_result :: {:ok, [[float()]]} | {:error, term()}
   @type chat_result :: {:ok, String.t()} | {:ok, Enumerable.t()} | {:error, term()}

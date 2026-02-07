@@ -3,29 +3,29 @@ defmodule Pearl.Providers.OpenRouterTest do
 
   alias Pearl.Providers.OpenRouter
 
-  describe "base_url/0" do
-    test "returns OpenRouter API URL" do
-      assert OpenRouter.base_url() == "https://openrouter.ai/api/v1"
-    end
-  end
-
   describe "chat/3 without API key" do
-    test "returns error when API key not configured" do
-      # Temporarily clear the API key to test the no-key case
+    setup do
       original = Application.get_env(:pearl, :providers)
+
+      on_exit(fn ->
+        Application.put_env(:pearl, :providers, original)
+      end)
+
+      %{original: original}
+    end
+
+    test "returns error when API key not configured", %{original: original} do
+      openrouter_config = original[:openrouter] || []
 
       Application.put_env(
         :pearl,
         :providers,
-        Keyword.put(original, :openrouter, Keyword.put(original[:openrouter], :api_key, nil))
+        Keyword.put(original || [], :openrouter, Keyword.put(openrouter_config, :api_key, nil))
       )
 
       messages = [%{role: "user", content: "Hello"}]
       result = OpenRouter.chat("openai/gpt-4o-mini", messages, stream: false)
       assert {:error, :no_api_key} = result
-
-      # Restore original config
-      Application.put_env(:pearl, :providers, original)
     end
   end
 end

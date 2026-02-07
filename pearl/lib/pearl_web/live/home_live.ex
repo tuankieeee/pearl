@@ -2,9 +2,12 @@ defmodule PearlWeb.HomeLive do
   use PearlWeb, :live_view
 
   alias Pearl.Repositories
+  alias Pearl.Repositories.Git
 
   @impl true
   def mount(_params, _session, socket) do
+    # Trap exits to handle linked task crashes gracefully
+    Process.flag(:trap_exit, true)
     repos = Repositories.list_repos()
 
     {:ok,
@@ -15,7 +18,8 @@ defmodule PearlWeb.HomeLive do
        generating: false,
        progress_by_repo: %{},
        error: nil,
-       confirm_delete_id: nil
+       confirm_delete_id: nil,
+       linked_tasks: MapSet.new()
      )}
   end
 
@@ -178,8 +182,6 @@ defmodule PearlWeb.HomeLive do
 
   @impl true
   def handle_event("generate", %{"repo_url" => url}, socket) do
-    alias Pearl.Repositories.Git
-
     case Git.parse_url(url) do
       {:ok, parsed} ->
         case find_or_create_pending_repo(url, parsed) do
@@ -200,18 +202,32 @@ defmodule PearlWeb.HomeLive do
             repo_id = repo.id
 
             # Fetch metadata in parallel (for instant card display with full info)
-            Task.start(fn ->
-              case Repositories.fetch_and_save_metadata(repo) do
-                {:ok, updated_repo} -> send(pid, {:metadata_updated, repo_id, updated_repo})
-                _ -> :ok
-              end
-            end)
+            # Linked to LiveView - terminates if user navigates away
+            {:ok, metadata_pid} =
+              Task.Supervisor.start_child(
+                Pearl.TaskSupervisor,
+                fn ->
+                  case Repositories.fetch_and_save_metadata(repo) do
+                    {:ok, updated_repo} -> send(pid, {:metadata_updated, repo_id, updated_repo})
+                    _ -> :ok
+                  end
+                end,
+                link: true
+              )
 
             # Main generation task
-            Task.start(fn ->
-              result = do_generate(repo, fn msg -> send(pid, {:progress, repo_id, msg}) end)
-              send(pid, {:generation_complete, repo_id, result})
-            end)
+            # Linked to LiveView - terminates if user navigates away
+            {:ok, generation_pid} =
+              Task.Supervisor.start_child(
+                Pearl.TaskSupervisor,
+                fn ->
+                  result = do_generate(repo, fn msg -> send(pid, {:progress, repo_id, msg}) end)
+                  send(pid, {:generation_complete, repo_id, result})
+                end,
+                link: true
+              )
+
+            socket = assign(socket, linked_tasks: MapSet.new([metadata_pid, generation_pid]))
 
             {:noreply, socket}
 
@@ -224,39 +240,49 @@ defmodule PearlWeb.HomeLive do
     end
   end
 
+  @impl true
   def handle_event("request_delete", %{"id" => id}, socket) do
-    {:noreply, assign(socket, confirm_delete_id: String.to_integer(id))}
+    case Integer.parse(id) do
+      {int_id, ""} -> {:noreply, assign(socket, confirm_delete_id: int_id)}
+      _ -> {:noreply, socket}
+    end
   end
 
+  @impl true
   def handle_event("cancel_delete", _params, socket) do
     {:noreply, assign(socket, confirm_delete_id: nil)}
   end
 
+  @impl true
   def handle_event("confirm_delete", %{"id" => id}, socket) do
-    repo_id = String.to_integer(id)
-
-    case Repositories.get_repo(repo_id) do
-      nil ->
-        {:noreply,
-         socket |> assign(confirm_delete_id: nil) |> put_flash(:error, "Repository not found")}
-
-      repo ->
-        case Repositories.delete_repo(repo) do
-          {:ok, deleted} ->
+    case Integer.parse(id) do
+      {repo_id, ""} ->
+        case Repositories.get_repo(repo_id) do
+          nil ->
             {:noreply,
-             socket
-             |> assign(
-               repos: Enum.reject(socket.assigns.repos, &(&1.id == repo_id)),
-               confirm_delete_id: nil
-             )
-             |> put_flash(:info, "Deleted #{deleted.owner}/#{deleted.name}")}
+             socket |> assign(confirm_delete_id: nil) |> put_flash(:error, "Repository not found")}
 
-          {:error, _} ->
-            {:noreply,
-             socket
-             |> assign(confirm_delete_id: nil)
-             |> put_flash(:error, "Failed to delete repository")}
+          repo ->
+            case Repositories.delete_repo(repo) do
+              {:ok, deleted} ->
+                {:noreply,
+                 socket
+                 |> assign(
+                   repos: Enum.reject(socket.assigns.repos, &(&1.id == repo_id)),
+                   confirm_delete_id: nil
+                 )
+                 |> put_flash(:info, "Deleted #{deleted.owner}/#{deleted.name}")}
+
+              {:error, _} ->
+                {:noreply,
+                 socket
+                 |> assign(confirm_delete_id: nil)
+                 |> put_flash(:error, "Failed to delete repository")}
+            end
         end
+
+      _ ->
+        {:noreply, assign(socket, confirm_delete_id: nil)}
     end
   end
 
@@ -302,6 +328,36 @@ defmodule PearlWeb.HomeLive do
        repos: repos,
        progress_by_repo: Map.delete(socket.assigns.progress_by_repo, repo_id),
        error: format_error(reason)
+     )}
+  end
+
+  @impl true
+  def handle_info({:EXIT, pid, :normal}, socket) do
+    {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
+  end
+
+  @impl true
+  def handle_info({:EXIT, pid, :shutdown}, socket) do
+    {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
+  end
+
+  @impl true
+  def handle_info({:EXIT, pid, {:shutdown, _}}, socket) do
+    {:noreply, assign(socket, linked_tasks: MapSet.delete(socket.assigns.linked_tasks, pid))}
+  end
+
+  def handle_info({:EXIT, crashed_pid, reason}, socket) do
+    # A linked task crashed - terminate sibling tasks and clear generating state
+    socket.assigns.linked_tasks
+    |> MapSet.delete(crashed_pid)
+    |> Enum.each(&Process.exit(&1, :shutdown))
+
+    {:noreply,
+     assign(socket,
+       generating: false,
+       progress_by_repo: %{},
+       linked_tasks: MapSet.new(),
+       error: "Task failed unexpectedly: #{inspect(reason)}"
      )}
   end
 
@@ -383,7 +439,7 @@ defmodule PearlWeb.HomeLive do
     do: "https://github.com/#{owner}.png?size=64"
 
   defp avatar_url(%{provider: "gitlab", owner: owner}),
-    do: "https://gitlab.com/uploads/-/system/user/avatar/#{owner}/avatar.png"
+    do: "https://api.dicebear.com/7.x/identicon/svg?seed=#{owner}"
 
   defp avatar_url(_), do: "https://api.dicebear.com/7.x/identicon/svg?seed=repo"
 

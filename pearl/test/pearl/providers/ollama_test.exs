@@ -1,5 +1,13 @@
 defmodule Pearl.Providers.OllamaTest do
-  use ExUnit.Case, async: true
+  @moduledoc """
+  Integration tests for the Ollama provider.
+
+  Tests tagged with :external require a running Ollama server and are
+  excluded by default (see test_helper.exs). Run with:
+
+      mix test --include external
+  """
+  use ExUnit.Case, async: false
 
   alias Pearl.Providers.Ollama
 
@@ -22,12 +30,25 @@ defmodule Pearl.Providers.OllamaTest do
 
   describe "embed/1" do
     @tag :external
-    test "returns embeddings for texts" do
+    test "returns embeddings for single text" do
       texts = ["Hello world"]
       result = Ollama.embed(texts)
       assert {:ok, [embedding]} = result
       assert is_list(embedding)
       assert length(embedding) > 0
+    end
+
+    @tag :external
+    test "returns embeddings for multiple texts in a single batch" do
+      texts = ["Hello world", "Goodbye world", "Testing batch embedding"]
+      result = Ollama.embed(texts)
+      assert {:ok, embeddings} = result
+      assert length(embeddings) == 3
+
+      for embedding <- embeddings do
+        assert is_list(embedding)
+        assert length(embedding) > 0
+      end
     end
   end
 
