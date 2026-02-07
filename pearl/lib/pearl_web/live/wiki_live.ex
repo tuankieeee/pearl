@@ -246,6 +246,12 @@ defmodule PearlWeb.WikiLive do
       when is_binary(question) and question != "" do
     %{repo: repo} = socket.assigns
 
+    # Capture history before appending the current question to avoid duplication
+    history =
+      for msg <- socket.assigns.ask_messages, msg.content != "" do
+        %{role: msg.role, content: msg.content}
+      end
+
     # Add user message and placeholder assistant message
     messages =
       socket.assigns.ask_messages ++
@@ -262,12 +268,6 @@ defmodule PearlWeb.WikiLive do
       )
 
     pid = self()
-
-    # Get history (all messages except the last empty assistant placeholder)
-    history =
-      for msg <- socket.assigns.ask_messages, msg.content != "" do
-        %{role: msg.role, content: msg.content}
-      end
 
     # Linked to LiveView - terminates if user navigates away
     _ =
