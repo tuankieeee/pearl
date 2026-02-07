@@ -240,7 +240,8 @@ defmodule PearlWeb.HomeLive do
 
             # Main generation task
             # Linked to LiveView - terminates if user navigates away
-            {:ok, generation_pid} =
+            # If this fails to start, kill the metadata task to avoid orphans
+            generation_result =
               Task.Supervisor.start_child(
                 Pearl.TaskSupervisor,
                 fn ->
@@ -250,9 +251,15 @@ defmodule PearlWeb.HomeLive do
                 link: true
               )
 
-            socket = assign(socket, linked_tasks: MapSet.new([metadata_pid, generation_pid]))
+            case generation_result do
+              {:ok, generation_pid} ->
+                socket = assign(socket, linked_tasks: MapSet.new([metadata_pid, generation_pid]))
+                {:noreply, socket}
 
-            {:noreply, socket}
+              {:error, reason} ->
+                Process.exit(metadata_pid, :shutdown)
+                {:noreply, assign(socket, generating: false, error: format_error(reason))}
+            end
 
           {:error, reason} ->
             {:noreply, assign(socket, error: format_error(reason))}

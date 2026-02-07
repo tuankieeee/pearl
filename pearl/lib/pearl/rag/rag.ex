@@ -32,7 +32,7 @@ defmodule Pearl.Rag do
     |> Repo.delete_all()
   end
 
-  @type index_opts :: [batch_size: pos_integer(), file_concurrency: pos_integer()]
+  @typep index_opts :: [batch_size: pos_integer(), file_concurrency: pos_integer()]
 
   @doc """
   Indexes a repository by chunking its files and generating vector embeddings.

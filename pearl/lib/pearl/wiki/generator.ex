@@ -86,7 +86,7 @@ defmodule Pearl.Wiki.Generator do
           end
         end,
         max_concurrency: 4,
-        timeout: 300_000
+        timeout: Pearl.Config.wiki_page_timeout()
       )
       |> Enum.reduce({%{}, []}, fn
         {:ok, {:ok, {page_id, content}}}, {pages, errors} ->

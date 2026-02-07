@@ -237,7 +237,8 @@ defmodule PearlWeb.WikiLive do
   end
 
   @impl true
-  def handle_event("ask", %{"question" => question}, socket) when question != "" do
+  def handle_event("ask", %{"question" => question}, socket)
+      when is_binary(question) and question != "" do
     %{repo: repo} = socket.assigns
 
     # Add user message and placeholder assistant message
@@ -259,9 +260,9 @@ defmodule PearlWeb.WikiLive do
 
     # Get history (all messages except the last empty assistant placeholder)
     history =
-      socket.assigns.ask_messages
-      |> Enum.filter(fn msg -> msg.content != "" end)
-      |> Enum.map(fn msg -> %{role: msg.role, content: msg.content} end)
+      for msg <- socket.assigns.ask_messages, msg.content != "" do
+        %{role: msg.role, content: msg.content}
+      end
 
     # Linked to LiveView - terminates if user navigates away
     _ =

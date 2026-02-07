@@ -265,7 +265,8 @@ defmodule Pearl.Repositories do
     repo_root = Path.expand(repo_path)
     full_path = Path.expand(file_path, repo_root)
 
-    with true <- String.starts_with?(full_path, repo_root <> "/"),
+    with false <- ".." in Path.split(file_path),
+         true <- String.starts_with?(full_path, repo_root <> "/"),
          {:ok, info} <- File.lstat(full_path),
          true <- info.type != :symlink do
       File.read(full_path)
