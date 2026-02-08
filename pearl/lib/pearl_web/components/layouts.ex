@@ -113,7 +113,7 @@ defmodule PearlWeb.Layouts do
       </div>
     </header>
 
-    {render_slot(@inner_block)}
+    {@inner_content}
 
     <.flash_group flash={@flash} />
     """
