@@ -14,8 +14,8 @@ defmodule PearlWeb.SettingsLiveTest do
     test "has breadcrumb in navbar", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/settings")
 
-      # Breadcrumb "Settings" appears in the navbar
-      assert html =~ "Settings"
+      # Breadcrumb shows "/" separator followed by "Settings" text
+      assert html =~ ~r|<span[^>]*>/</span>\s*<span[^>]*>Settings</span>|
     end
   end
 end

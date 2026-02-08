@@ -36,8 +36,6 @@ defmodule PearlWeb.Layouts do
   attr :show_ask, :boolean, default: false, doc: "whether to show the Ask button"
   attr :search_results, :list, default: [], doc: "list of repo search results"
 
-  slot :inner_block, required: true
-
   def app(assigns) do
     ~H"""
     <header class="navbar h-12 min-h-12 bg-base-100 border-b border-base-content/8 px-4 sticky top-0 z-50">
