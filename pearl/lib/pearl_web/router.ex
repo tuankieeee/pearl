@@ -26,8 +26,13 @@ defmodule PearlWeb.Router do
   scope "/", PearlWeb do
     pipe_through :browser
 
-    live "/", HomeLive, :index
-    live "/wiki/:id", WikiLive, :show
+    live_session :default,
+      layout: {PearlWeb.Layouts, :app},
+      on_mount: [PearlWeb.NavbarHook] do
+      live "/", HomeLive, :index
+      live "/wiki/:id", WikiLive, :show
+      live "/settings", SettingsLive, :index
+    end
   end
 
   # Other scopes may use custom stacks.

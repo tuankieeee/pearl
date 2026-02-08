@@ -26,6 +26,9 @@ defmodule PearlWeb.WikiLive do
       {:ok,
        assign(socket,
          page_title: "#{repo.owner}/#{repo.name} - Pearl",
+         drawer_id: "wiki-drawer",
+         breadcrumb: "#{repo.owner}/#{repo.name}",
+         show_ask: true,
          repo: repo,
          wiki_cache: wiki_cache,
          pages: pages,
@@ -46,42 +49,12 @@ defmodule PearlWeb.WikiLive do
     ~H"""
     <div class="drawer lg:drawer-open">
       <input id="wiki-drawer" type="checkbox" class="drawer-toggle" />
-      
-    <!-- Main content area -->
-      <div class="drawer-content flex flex-col bg-base-200 h-screen">
-        <!-- Mobile header with menu toggle -->
-        <div class="navbar bg-base-100 lg:hidden border-b border-base-300">
-          <div class="flex-none">
-            <label for="wiki-drawer" class="btn btn-square btn-ghost drawer-button">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                class="inline-block h-5 w-5 stroke-current"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </label>
-          </div>
-          <div class="flex-1">
-            <span class="font-semibold truncate">{@repo.owner}/{@repo.name}</span>
-          </div>
-          <div class="flex-none">
-            <button phx-click="toggle_ask" class="btn btn-ghost btn-sm">
-              Ask
-            </button>
-          </div>
-        </div>
-        
-    <!-- Content wrapper -->
-        <div class="flex flex-1 overflow-hidden">
+
+      <div class="drawer-content flex flex-col bg-base-200 h-[calc(100dvh-3rem)]">
+        <!-- Content wrapper -->
+        <div class="relative flex-1 overflow-hidden">
           <!-- Main content -->
-          <main class="flex-1 overflow-y-auto bg-base-100">
+          <main class="h-full overflow-y-auto bg-base-100">
             <%= if @wiki_cache do %>
               <div class="max-w-4xl mx-auto py-8 px-8">
                 <MarkdownComponent.markdown id="wiki-content" content={@current_content} />
@@ -97,10 +70,9 @@ defmodule PearlWeb.WikiLive do
               </div>
             <% end %>
           </main>
-          
-    <!-- Ask panel (slide-out) -->
+          <!-- Ask panel (slide-over overlay) -->
           <%= if @ask_open do %>
-            <aside class="w-[36rem] bg-gradient-to-b from-base-100 to-base-200 border-l border-base-300/50 flex flex-col">
+            <aside class="absolute top-0 right-0 h-full w-[36rem] max-w-full z-30 shadow-2xl bg-gradient-to-b from-base-100 to-base-200 border-l border-base-300/50 flex flex-col">
               <div class="px-5 py-4 border-b border-primary/20 bg-gradient-to-r from-primary/5 to-transparent flex items-center justify-between">
                 <h3 class="text-sm font-semibold tracking-wide uppercase text-primary/80 font-[family-name:var(--font-heading)]">
                   Ask about the codebase
@@ -176,21 +148,11 @@ defmodule PearlWeb.WikiLive do
           <% end %>
         </div>
       </div>
-      
-    <!-- Sidebar -->
-      <div class="drawer-side">
+      <!-- Sidebar -->
+      <div class="drawer-side z-40 h-[calc(100dvh-3rem)] top-12">
         <label for="wiki-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <aside class="bg-base-100 min-h-full w-64 flex flex-col border-r border-base-300">
-          <div class="p-4 border-b border-base-300">
-            <.link navigate={~p"/"} class="link link-hover text-sm opacity-60">
-              ← Back to Home
-            </.link>
-            <h2 class="mt-2 font-semibold truncate">
-              {@repo.owner}/{@repo.name}
-            </h2>
-          </div>
-
-          <nav class="flex-1 overflow-y-auto p-2">
+          <nav class="flex-1 overflow-y-auto p-2 pt-4">
             <ul class="menu menu-sm">
               <%= for page <- @pages do %>
                 <li>
@@ -205,19 +167,6 @@ defmodule PearlWeb.WikiLive do
               <% end %>
             </ul>
           </nav>
-
-          <div class="p-4 border-t border-base-300">
-            <button
-              phx-click="toggle_ask"
-              class="btn btn-ghost btn-sm w-full gap-2 text-base-content/60 hover:text-base-content"
-            >
-              <%= if @ask_open do %>
-                <.icon name="hero-x-mark" class="size-4" /> Close Chat
-              <% else %>
-                <.icon name="hero-chat-bubble-left-right" class="size-4" /> Chat with AI
-              <% end %>
-            </button>
-          </div>
         </aside>
       </div>
     </div>
@@ -270,26 +219,30 @@ defmodule PearlWeb.WikiLive do
     pid = self()
 
     # Linked to LiveView - terminates if user navigates away
-    _ =
-      Task.Supervisor.start_child(
-        Pearl.TaskSupervisor,
-        fn ->
-          case Rag.ask(repo, question, stream: true, history: history) do
-            {:ok, stream} ->
-              Enum.each(stream, fn chunk ->
-                send(pid, {:answer_chunk, chunk})
-              end)
+    case Task.Supervisor.start_child(
+           Pearl.TaskSupervisor,
+           fn ->
+             case Rag.ask(repo, question, stream: true, history: history) do
+               {:ok, stream} ->
+                 Enum.each(stream, fn chunk ->
+                   send(pid, {:answer_chunk, chunk})
+                 end)
 
-              send(pid, :answer_complete)
+                 send(pid, :answer_complete)
 
-            {:error, reason} ->
-              send(pid, {:answer_error, reason})
-          end
-        end,
-        link: true
-      )
+               {:error, reason} ->
+                 send(pid, {:answer_error, reason})
+             end
+           end,
+           link: true
+         ) do
+      {:ok, _pid} ->
+        {:noreply, socket}
 
-    {:noreply, socket}
+      {:error, reason} ->
+        Logger.error("Failed to start ask task: #{inspect(reason)}")
+        {:noreply, assign(socket, ask_loading: false)}
+    end
   end
 
   @impl true
@@ -353,23 +306,30 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_info({:EXIT, pid, reason}, socket) do
-    Logger.error("Linked task #{inspect(pid)} crashed: #{inspect(reason)}")
+    # Only handle as RAG task crash if we're currently loading an answer
+    if socket.assigns.ask_loading do
+      Logger.error("RAG streaming task #{inspect(pid)} crashed: #{inspect(reason)}")
 
-    messages = socket.assigns.ask_messages
+      messages = socket.assigns.ask_messages
 
-    updated_messages =
-      case Enum.split(messages, -1) do
-        {init, [%{role: :assistant} = last]} ->
-          init ++ [%{last | content: last.content <> "\n\n_(Response interrupted)_"}]
+      updated_messages =
+        case Enum.split(messages, -1) do
+          {init, [%{role: :assistant} = last]} ->
+            init ++ [%{last | content: last.content <> "\n\n_(Response interrupted)_"}]
 
-        _ ->
-          messages
-      end
+          _ ->
+            messages
+        end
 
-    {:noreply,
-     socket
-     |> assign(ask_loading: false, ask_messages: updated_messages)
-     |> push_event("focus-input", %{})}
+      {:noreply,
+       socket
+       |> assign(ask_loading: false, ask_messages: updated_messages)
+       |> push_event("focus-input", %{})}
+    else
+      # Unknown linked task crashed - log for debugging but don't modify UI state
+      Logger.warning("Unknown linked task #{inspect(pid)} exited: #{inspect(reason)}")
+      {:noreply, socket}
+    end
   end
 
   defp get_page_content(nil, _), do: ""

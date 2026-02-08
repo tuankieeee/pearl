@@ -1,10 +1,12 @@
 # Log files
 logs/
+.daydream/
 
 # IDE
 .vscode/
 
 # Tool config directories
+.beagle/
 .expert/
 .serena/
 

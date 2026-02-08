@@ -23,5 +23,19 @@ defmodule PearlWeb.HomeLiveTest do
       refute has_element?(view, "select[name='provider']")
       refute has_element?(view, "input[name='model']")
     end
+
+    test "has global navbar with Pearl wordmark", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/")
+
+      # Global navbar renders Pearl link
+      assert html =~ ~s(Pearl)
+      assert html =~ "Search repos"
+    end
+
+    test "does not show Ask button on home", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
+
+      refute has_element?(view, "button[phx-click=toggle_ask]")
+    end
   end
 end

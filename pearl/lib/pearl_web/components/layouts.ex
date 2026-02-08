@@ -31,23 +31,86 @@ defmodule PearlWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
-  slot :inner_block, required: true
+  attr :drawer_id, :string, default: nil, doc: "drawer checkbox ID (for wiki mobile hamburger)"
+  attr :breadcrumb, :string, default: nil, doc: "breadcrumb text shown after Pearl wordmark"
+  attr :show_ask, :boolean, default: false, doc: "whether to show the Ask button"
+  attr :search_form, :map, default: nil, doc: "search form created via to_form/2"
+  attr :search_results, :list, default: [], doc: "list of repo search results"
+  attr :search_query, :string, default: "", doc: "current search query for input persistence"
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <span class="text-xl font-bold">Pearl</span>
-        </a>
+    <header class="navbar h-12 min-h-12 bg-base-100 border-b border-base-content/8 px-4 sticky top-0 z-50">
+      <div class="navbar-start gap-2">
+        <label :if={@drawer_id} for={@drawer_id} class="btn btn-ghost btn-sm btn-square lg:hidden">
+          <.icon name="hero-bars-3" class="size-5" />
+        </label>
+
+        <.link
+          navigate={~p"/"}
+          class="font-semibold tracking-wider uppercase text-sm text-base-content/70 hover:text-primary transition-colors"
+        >
+          Pearl
+        </.link>
+        <span :if={@breadcrumb} class="text-base-content/20">/</span>
+        <span :if={@breadcrumb} class="text-sm font-medium truncate max-w-48">{@breadcrumb}</span>
+      </div>
+
+      <div class="navbar-end gap-1">
+        <div class="relative hidden sm:block mr-2">
+          <.form for={@search_form} id="navbar-search" phx-change="search" phx-submit="search" phx-debounce="300">
+            <.icon
+              name="hero-magnifying-glass"
+              class="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30"
+            />
+            <input
+              type="text"
+              name={@search_form[:q].name}
+              value={@search_form[:q].value}
+              placeholder="Search repos..."
+              class="input input-sm bg-base-200/50 border-base-content/10 pl-9 w-56 focus:w-72 transition-all duration-200 text-sm"
+            />
+          </.form>
+          <ul
+            :if={@search_results != []}
+            class="menu bg-base-200 rounded-box absolute top-full mt-1 w-72 p-2 shadow-lg border border-base-content/10 z-50"
+          >
+            <li :for={repo <- @search_results}>
+              <.link navigate={~p"/wiki/#{repo.id}"}>{repo.owner}/{repo.name}</.link>
+            </li>
+          </ul>
+        </div>
+
+        <%!-- Mobile search button hidden until mobile search is implemented --%>
+
+        <button
+          :if={@show_ask}
+          phx-click="toggle_ask"
+          class="btn btn-ghost btn-sm gap-1.5 text-base-content/60 hover:text-primary"
+        >
+          <.icon name="hero-chat-bubble-left-right" class="size-4" />
+          <span class="hidden md:inline text-xs">Ask</span>
+        </button>
+
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-sm btn-circle">
+            <.icon name="hero-cog-6-tooth" class="size-4" />
+          </div>
+          <ul
+            tabindex="0"
+            class="dropdown-content menu bg-base-200 rounded-box z-[1] w-48 p-2 shadow-lg border border-base-content/10 mt-2"
+          >
+            <li>
+              <.link navigate={~p"/settings"}>
+                <.icon name="hero-adjustments-horizontal" class="size-4" /> Settings
+              </.link>
+            </li>
+          </ul>
+        </div>
       </div>
     </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
-        {render_slot(@inner_block)}
-      </div>
-    </main>
+    {@inner_content}
 
     <.flash_group flash={@flash} />
     """

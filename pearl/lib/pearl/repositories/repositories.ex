@@ -31,6 +31,18 @@ defmodule Pearl.Repositories do
     |> Repo.all()
   end
 
+  @spec search(String.t()) :: [RepoRecord.t()]
+  def search(""), do: []
+
+  def search(query) when is_binary(query) do
+    pattern = "%#{query}%"
+
+    RepoRecord
+    |> where([r], ilike(r.owner, ^pattern) or ilike(r.name, ^pattern))
+    |> order_by(desc: :inserted_at)
+    |> Repo.all()
+  end
+
   @spec update_status(RepoRecord.t(), String.t()) ::
           {:ok, RepoRecord.t()} | {:error, Ecto.Changeset.t()}
   def update_status(repo, status) do

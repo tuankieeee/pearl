@@ -16,6 +16,9 @@ defmodule PearlWeb.HomeLive do
     {:ok,
      assign(socket,
        page_title: "Pearl",
+       drawer_id: nil,
+       breadcrumb: nil,
+       show_ask: false,
        repos: repos,
        repo_url: "",
        generating: false,
@@ -31,11 +34,6 @@ defmodule PearlWeb.HomeLive do
     ~H"""
     <div class="min-h-screen bg-base-200">
       <div class="max-w-6xl mx-auto py-12 px-4">
-        <header class="text-center mb-12">
-          <h1 class="text-4xl font-bold mb-2">Pearl</h1>
-          <p class="opacity-70">Generate wikis from your code.</p>
-        </header>
-
         <div class="card bg-base-100 shadow-md mb-8">
           <div class="card-body">
             <form phx-submit="generate" class="space-y-6">
