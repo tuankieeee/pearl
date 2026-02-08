@@ -34,6 +34,7 @@ defmodule PearlWeb.Layouts do
   attr :drawer_id, :string, default: nil, doc: "drawer checkbox ID (for wiki mobile hamburger)"
   attr :breadcrumb, :string, default: nil, doc: "breadcrumb text shown after Pearl wordmark"
   attr :show_ask, :boolean, default: false, doc: "whether to show the Ask button"
+  attr :search_form, :map, default: nil, doc: "search form created via to_form/2"
   attr :search_results, :list, default: [], doc: "list of repo search results"
   attr :search_query, :string, default: "", doc: "current search query for input persistence"
 
@@ -57,19 +58,19 @@ defmodule PearlWeb.Layouts do
 
       <div class="navbar-end gap-1">
         <div class="relative hidden sm:block mr-2">
-          <form phx-change="search" phx-submit="search" phx-debounce="300">
+          <.form for={@search_form} id="navbar-search" phx-change="search" phx-submit="search" phx-debounce="300">
             <.icon
               name="hero-magnifying-glass"
               class="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30"
             />
             <input
               type="text"
-              name="q"
-              value={@search_query}
+              name={@search_form[:q].name}
+              value={@search_form[:q].value}
               placeholder="Search repos..."
               class="input input-sm bg-base-200/50 border-base-content/10 pl-9 w-56 focus:w-72 transition-all duration-200 text-sm"
             />
-          </form>
+          </.form>
           <ul
             :if={@search_results != []}
             class="menu bg-base-200 rounded-box absolute top-full mt-1 w-72 p-2 shadow-lg border border-base-content/10 z-50"

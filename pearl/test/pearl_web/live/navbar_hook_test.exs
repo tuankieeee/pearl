@@ -28,7 +28,7 @@ defmodule PearlWeb.NavbarHookTest do
       html =
         view
         |> element("form[phx-change=search]")
-        |> render_change(%{"q" => "searchable"})
+        |> render_change(%{"search" => %{"q" => "searchable"}})
 
       assert html =~ "test/searchable"
     end
@@ -39,7 +39,7 @@ defmodule PearlWeb.NavbarHookTest do
       html =
         view
         |> element("form[phx-change=search]")
-        |> render_change(%{"q" => ""})
+        |> render_change(%{"search" => %{"q" => ""}})
 
       refute html =~ "test/searchable"
     end
