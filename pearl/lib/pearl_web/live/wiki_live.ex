@@ -70,8 +70,7 @@ defmodule PearlWeb.WikiLive do
               </div>
             <% end %>
           </main>
-
-    <!-- Ask panel (slide-over overlay) -->
+          <!-- Ask panel (slide-over overlay) -->
           <%= if @ask_open do %>
             <aside class="absolute top-0 right-0 h-full w-[36rem] max-w-full z-30 shadow-2xl bg-gradient-to-b from-base-100 to-base-200 border-l border-base-300/50 flex flex-col">
               <div class="px-5 py-4 border-b border-primary/20 bg-gradient-to-r from-primary/5 to-transparent flex items-center justify-between">
@@ -149,8 +148,7 @@ defmodule PearlWeb.WikiLive do
           <% end %>
         </div>
       </div>
-      
-    <!-- Sidebar -->
+      <!-- Sidebar -->
       <div class="drawer-side z-40 h-[calc(100dvh-3rem)] top-12">
         <label for="wiki-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <aside class="bg-base-100 min-h-full w-64 flex flex-col border-r border-base-300">
@@ -169,7 +167,6 @@ defmodule PearlWeb.WikiLive do
               <% end %>
             </ul>
           </nav>
-
         </aside>
       </div>
     </div>
@@ -222,26 +219,30 @@ defmodule PearlWeb.WikiLive do
     pid = self()
 
     # Linked to LiveView - terminates if user navigates away
-    _ =
-      Task.Supervisor.start_child(
-        Pearl.TaskSupervisor,
-        fn ->
-          case Rag.ask(repo, question, stream: true, history: history) do
-            {:ok, stream} ->
-              Enum.each(stream, fn chunk ->
-                send(pid, {:answer_chunk, chunk})
-              end)
+    case Task.Supervisor.start_child(
+           Pearl.TaskSupervisor,
+           fn ->
+             case Rag.ask(repo, question, stream: true, history: history) do
+               {:ok, stream} ->
+                 Enum.each(stream, fn chunk ->
+                   send(pid, {:answer_chunk, chunk})
+                 end)
 
-              send(pid, :answer_complete)
+                 send(pid, :answer_complete)
 
-            {:error, reason} ->
-              send(pid, {:answer_error, reason})
-          end
-        end,
-        link: true
-      )
+               {:error, reason} ->
+                 send(pid, {:answer_error, reason})
+             end
+           end,
+           link: true
+         ) do
+      {:ok, _pid} ->
+        {:noreply, socket}
 
-    {:noreply, socket}
+      {:error, reason} ->
+        Logger.error("Failed to start ask task: #{inspect(reason)}")
+        {:noreply, assign(socket, ask_loading: false)}
+    end
   end
 
   @impl true
@@ -305,23 +306,30 @@ defmodule PearlWeb.WikiLive do
 
   @impl true
   def handle_info({:EXIT, pid, reason}, socket) do
-    Logger.error("Linked task #{inspect(pid)} crashed: #{inspect(reason)}")
+    # Only handle as RAG task crash if we're currently loading an answer
+    if socket.assigns.ask_loading do
+      Logger.error("RAG streaming task #{inspect(pid)} crashed: #{inspect(reason)}")
 
-    messages = socket.assigns.ask_messages
+      messages = socket.assigns.ask_messages
 
-    updated_messages =
-      case Enum.split(messages, -1) do
-        {init, [%{role: :assistant} = last]} ->
-          init ++ [%{last | content: last.content <> "\n\n_(Response interrupted)_"}]
+      updated_messages =
+        case Enum.split(messages, -1) do
+          {init, [%{role: :assistant} = last]} ->
+            init ++ [%{last | content: last.content <> "\n\n_(Response interrupted)_"}]
 
-        _ ->
-          messages
-      end
+          _ ->
+            messages
+        end
 
-    {:noreply,
-     socket
-     |> assign(ask_loading: false, ask_messages: updated_messages)
-     |> push_event("focus-input", %{})}
+      {:noreply,
+       socket
+       |> assign(ask_loading: false, ask_messages: updated_messages)
+       |> push_event("focus-input", %{})}
+    else
+      # Unknown linked task crashed - log for debugging but don't modify UI state
+      Logger.warning("Unknown linked task #{inspect(pid)} exited: #{inspect(reason)}")
+      {:noreply, socket}
+    end
   end
 
   defp get_page_content(nil, _), do: ""
