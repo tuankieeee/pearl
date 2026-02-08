@@ -6,6 +6,7 @@ logs/
 .vscode/
 
 # Tool config directories
+.beagle/
 .expert/
 .serena/
 
