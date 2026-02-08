@@ -103,4 +103,59 @@ defmodule Pearl.RepositoriesTest do
       assert length(repos) >= 2
     end
   end
+
+  describe "search/1" do
+    setup do
+      {:ok, _} =
+        Repositories.create_repo(%{
+          url: "https://github.com/acme/rocket",
+          provider: "github",
+          owner: "acme",
+          name: "rocket"
+        })
+
+      {:ok, _} =
+        Repositories.create_repo(%{
+          url: "https://github.com/acme/launcher",
+          provider: "github",
+          owner: "acme",
+          name: "launcher"
+        })
+
+      {:ok, _} =
+        Repositories.create_repo(%{
+          url: "https://github.com/other/widget",
+          provider: "github",
+          owner: "other",
+          name: "widget"
+        })
+
+      :ok
+    end
+
+    test "returns repos matching owner" do
+      results = Repositories.search("acme")
+      assert length(results) == 2
+      assert Enum.all?(results, &(&1.owner == "acme"))
+    end
+
+    test "returns repos matching name" do
+      results = Repositories.search("rocket")
+      assert length(results) == 1
+      assert hd(results).name == "rocket"
+    end
+
+    test "search is case-insensitive" do
+      results = Repositories.search("ROCKET")
+      assert length(results) == 1
+    end
+
+    test "returns empty list for no matches" do
+      assert Repositories.search("nonexistent") == []
+    end
+
+    test "returns empty list for empty query" do
+      assert Repositories.search("") == []
+    end
+  end
 end
