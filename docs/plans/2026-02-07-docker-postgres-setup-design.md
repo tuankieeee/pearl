@@ -6,7 +6,7 @@ Setting up Pearl requires installing PostgreSQL 18+ and pgvector natively, which
 
 ## Decision
 
-Add docker-compose for Postgres-only (not the full app), make the DB port configurable via `PEARL_DB_PORT`, and surface clear error messages on connection failure.
+Add docker-compose for Postgres-only (not the full app), make the DB port configurable via `PEARL_DB_PORT`, and rely on Phoenix's built-in connection error messages.
 
 ## Design
 
@@ -22,7 +22,12 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - pearl_pgdata:/var/lib/postgresql/data
+      - pearl_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pearl_pgdata:
@@ -31,6 +36,7 @@ volumes:
 - `pgvector/pgvector:pg18` — Postgres 18 with pgvector pre-installed
 - Port configurable via `PEARL_DB_PORT` env var, defaults to 5432
 - Named volume for data persistence across restarts
+- Healthcheck enables `docker compose up -d --wait` to block until ready
 
 ### 2. Dev/Test Config Changes
 
@@ -48,49 +54,32 @@ config :pearl, Pearl.Repo,
 
 No changes to `runtime.exs` — production uses `DATABASE_URL` which includes the port.
 
-### 3. Port Conflict Error Message
+### 3. README Updates
 
-In `lib/pearl/repo.ex`, enhance the `init/2` callback to catch `DBConnection.ConnectionError` during startup and print:
+- Replace native Postgres prerequisites with Docker-first: `docker compose up -d`
+- Add `docker compose up -d` as a setup step (after clone, before LLM config)
+- Mention `PEARL_DB_PORT` for port conflict resolution
+- Keep native install as a brief alternative
+- Remove redundant `cd assets && npm install` step (`mix setup` handles it)
 
-```
-==> Pearl cannot connect to PostgreSQL on port 5432.
+### 4. CLAUDE.md Updates
 
-    This usually means:
-    1. PostgreSQL is not running — start it with: docker compose up -d
-    2. Another service is using port 5432 — set a different port:
-       export PEARL_DB_PORT=5433
-       Then restart both docker-compose and the Phoenix server.
-
-    Current config: localhost:5432 (override with PEARL_DB_PORT)
-```
-
-### 4. README Updates
-
-Docker-first setup instructions:
-
-1. `docker compose up -d` — start Postgres
-2. `export OPENROUTER_API_KEY=sk-...` — configure LLM
-3. `mix setup && mix phx.server` — run the app
-
-Port conflict section explains `PEARL_DB_PORT`. Native Postgres mentioned as a brief alternative.
-
-### 5. CLAUDE.md Updates
-
-Update development commands section to include `docker compose up -d` in the setup flow.
+- Add `docker compose up -d` to the Development Commands setup flow
+- Add `PEARL_DB_PORT` to the Environment Variables section
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `docker-compose.yml` | New — Postgres 18 + pgvector service |
+| `docker-compose.yml` | New — Postgres 18 + pgvector service with healthcheck |
 | `config/dev.exs` | Add `port:` from `PEARL_DB_PORT` |
 | `config/test.exs` | Add `port:` from `PEARL_DB_PORT` |
-| `lib/pearl/repo.ex` | Connection error message in `init/2` |
 | `README.md` | Docker-first setup instructions |
-| `CLAUDE.md` | Update dev commands |
+| `CLAUDE.md` | Update dev commands and env vars |
 
 ## Scope Boundaries
 
 - No Dockerfile for the Elixir app (future work)
 - No docker-compose profiles for full-stack containers
+- No custom error messages in Repo — Phoenix defaults are clear enough
 - Production config unchanged (`DATABASE_URL` already handles this)

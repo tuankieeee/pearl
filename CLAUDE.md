@@ -11,6 +11,9 @@ Pearl is a Phoenix/Elixir web application that generates comprehensive wikis fro
 All commands run from the `pearl/` directory:
 
 ```bash
+# Start PostgreSQL (Docker)
+docker compose up -d
+
 # Setup (install deps, create DB, setup assets)
 mix setup
 
@@ -102,6 +105,9 @@ OLLAMA_DEFAULT_MODEL=llama3.2:3b
 
 # Storage
 PEARL_REPOS_PATH=~/.pearl/repos
+
+# Database (Docker)
+PEARL_DB_PORT=5432              # Override if port 5432 is in use
 ```
 
 ## Tech Stack
