@@ -1,5 +1,6 @@
 # Log files
 logs/
+.daydream/
 
 # IDE
 .vscode/
