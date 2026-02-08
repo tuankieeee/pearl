@@ -52,9 +52,9 @@ defmodule PearlWeb.WikiLive do
 
       <div class="drawer-content flex flex-col bg-base-200 h-[calc(100dvh-3rem)]">
         <!-- Content wrapper -->
-        <div class="flex flex-1 overflow-hidden">
+        <div class="relative flex-1 overflow-hidden">
           <!-- Main content -->
-          <main class="flex-1 overflow-y-auto bg-base-100">
+          <main class="h-full overflow-y-auto bg-base-100">
             <%= if @wiki_cache do %>
               <div class="max-w-4xl mx-auto py-8 px-8">
                 <MarkdownComponent.markdown id="wiki-content" content={@current_content} />
@@ -70,10 +70,10 @@ defmodule PearlWeb.WikiLive do
               </div>
             <% end %>
           </main>
-          
-    <!-- Ask panel (slide-out) -->
+
+    <!-- Ask panel (slide-over overlay) -->
           <%= if @ask_open do %>
-            <aside class="w-[36rem] bg-gradient-to-b from-base-100 to-base-200 border-l border-base-300/50 flex flex-col">
+            <aside class="absolute top-0 right-0 h-full w-[36rem] max-w-full z-30 shadow-2xl bg-gradient-to-b from-base-100 to-base-200 border-l border-base-300/50 flex flex-col">
               <div class="px-5 py-4 border-b border-primary/20 bg-gradient-to-r from-primary/5 to-transparent flex items-center justify-between">
                 <h3 class="text-sm font-semibold tracking-wide uppercase text-primary/80 font-[family-name:var(--font-heading)]">
                   Ask about the codebase
@@ -154,13 +154,7 @@ defmodule PearlWeb.WikiLive do
       <div class="drawer-side z-40 h-[calc(100dvh-3rem)] top-12">
         <label for="wiki-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <aside class="bg-base-100 min-h-full w-64 flex flex-col border-r border-base-300">
-          <div class="p-4 border-b border-base-300">
-            <h2 class="font-semibold truncate">
-              {@repo.owner}/{@repo.name}
-            </h2>
-          </div>
-
-          <nav class="flex-1 overflow-y-auto p-2">
+          <nav class="flex-1 overflow-y-auto p-2 pt-4">
             <ul class="menu menu-sm">
               <%= for page <- @pages do %>
                 <li>
@@ -176,18 +170,6 @@ defmodule PearlWeb.WikiLive do
             </ul>
           </nav>
 
-          <div class="p-4 border-t border-base-300">
-            <button
-              phx-click="toggle_ask"
-              class="btn btn-ghost btn-sm w-full gap-2 text-base-content/60 hover:text-base-content"
-            >
-              <%= if @ask_open do %>
-                <.icon name="hero-x-mark" class="size-4" /> Close Chat
-              <% else %>
-                <.icon name="hero-chat-bubble-left-right" class="size-4" /> Chat with AI
-              <% end %>
-            </button>
-          </div>
         </aside>
       </div>
     </div>

@@ -54,8 +54,8 @@ defmodule PearlWeb.Layouts do
         <span :if={@breadcrumb} class="text-sm font-medium truncate max-w-48">{@breadcrumb}</span>
       </div>
 
-      <div class="navbar-center hidden sm:flex">
-        <div class="relative">
+      <div class="navbar-end gap-1">
+        <div class="relative hidden sm:block mr-2">
           <form phx-change="search" phx-submit="search">
             <.icon
               name="hero-magnifying-glass"
@@ -77,9 +77,7 @@ defmodule PearlWeb.Layouts do
             </li>
           </ul>
         </div>
-      </div>
 
-      <div class="navbar-end gap-1">
         <button class="btn btn-ghost btn-sm btn-circle sm:hidden">
           <.icon name="hero-magnifying-glass" class="size-4" />
         </button>

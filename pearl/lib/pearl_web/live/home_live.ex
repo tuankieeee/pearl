@@ -34,11 +34,6 @@ defmodule PearlWeb.HomeLive do
     ~H"""
     <div class="min-h-screen bg-base-200">
       <div class="max-w-6xl mx-auto py-12 px-4">
-        <header class="text-center mb-12">
-          <h1 class="text-4xl font-bold mb-2">Generate Wikis</h1>
-          <p class="opacity-70">Paste a repository URL to generate a comprehensive wiki.</p>
-        </header>
-
         <div class="card bg-base-100 shadow-md mb-8">
           <div class="card-body">
             <form phx-submit="generate" class="space-y-6">
