@@ -44,5 +44,27 @@ defmodule PearlWeb.WikiLiveTest do
         live(conn, "/wiki/999999")
       end
     end
+
+    test "has global navbar with breadcrumb", %{conn: conn, repo: repo} do
+      {:ok, _view, html} = live(conn, "/wiki/#{repo.id}")
+
+      # Navbar shows the repo as breadcrumb
+      assert html =~ "Pearl"
+      assert html =~ "#{repo.owner}/#{repo.name}"
+    end
+
+    test "has Ask button in navbar", %{conn: conn, repo: repo} do
+      {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
+
+      assert has_element?(view, "button[phx-click=toggle_ask]")
+    end
+
+    test "does not have internal mobile navbar", %{conn: conn, repo: repo} do
+      {:ok, view, _html} = live(conn, "/wiki/#{repo.id}")
+
+      # The old internal mobile navbar had class "lg:hidden" with a "navbar" inside drawer-content
+      # Now there should be no navbar inside the drawer-content div
+      refute has_element?(view, ".drawer-content > .navbar")
+    end
   end
 end

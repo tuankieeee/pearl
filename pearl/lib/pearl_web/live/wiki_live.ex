@@ -26,6 +26,9 @@ defmodule PearlWeb.WikiLive do
       {:ok,
        assign(socket,
          page_title: "#{repo.owner}/#{repo.name} - Pearl",
+         drawer_id: "wiki-drawer",
+         breadcrumb: "#{repo.owner}/#{repo.name}",
+         show_ask: true,
          repo: repo,
          wiki_cache: wiki_cache,
          pages: pages,
@@ -46,39 +49,9 @@ defmodule PearlWeb.WikiLive do
     ~H"""
     <div class="drawer lg:drawer-open">
       <input id="wiki-drawer" type="checkbox" class="drawer-toggle" />
-      
-    <!-- Main content area -->
-      <div class="drawer-content flex flex-col bg-base-200 h-screen">
-        <!-- Mobile header with menu toggle -->
-        <div class="navbar bg-base-100 lg:hidden border-b border-base-300">
-          <div class="flex-none">
-            <label for="wiki-drawer" class="btn btn-square btn-ghost drawer-button">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                class="inline-block h-5 w-5 stroke-current"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </label>
-          </div>
-          <div class="flex-1">
-            <span class="font-semibold truncate">{@repo.owner}/{@repo.name}</span>
-          </div>
-          <div class="flex-none">
-            <button phx-click="toggle_ask" class="btn btn-ghost btn-sm">
-              Ask
-            </button>
-          </div>
-        </div>
-        
-    <!-- Content wrapper -->
+
+      <div class="drawer-content flex flex-col bg-base-200 h-[calc(100dvh-3rem)]">
+        <!-- Content wrapper -->
         <div class="flex flex-1 overflow-hidden">
           <!-- Main content -->
           <main class="flex-1 overflow-y-auto bg-base-100">
@@ -178,14 +151,11 @@ defmodule PearlWeb.WikiLive do
       </div>
       
     <!-- Sidebar -->
-      <div class="drawer-side">
+      <div class="drawer-side z-40 h-[calc(100dvh-3rem)] top-12">
         <label for="wiki-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
         <aside class="bg-base-100 min-h-full w-64 flex flex-col border-r border-base-300">
           <div class="p-4 border-b border-base-300">
-            <.link navigate={~p"/"} class="link link-hover text-sm opacity-60">
-              ← Back to Home
-            </.link>
-            <h2 class="mt-2 font-semibold truncate">
+            <h2 class="font-semibold truncate">
               {@repo.owner}/{@repo.name}
             </h2>
           </div>
