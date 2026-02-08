@@ -35,6 +35,7 @@ defmodule PearlWeb.Layouts do
   attr :breadcrumb, :string, default: nil, doc: "breadcrumb text shown after Pearl wordmark"
   attr :show_ask, :boolean, default: false, doc: "whether to show the Ask button"
   attr :search_results, :list, default: [], doc: "list of repo search results"
+  attr :search_query, :string, default: "", doc: "current search query for input persistence"
 
   def app(assigns) do
     ~H"""
@@ -64,6 +65,7 @@ defmodule PearlWeb.Layouts do
             <input
               type="text"
               name="q"
+              value={@search_query}
               placeholder="Search repos..."
               class="input input-sm bg-base-200/50 border-base-content/10 pl-9 w-56 focus:w-72 transition-all duration-200 text-sm"
             />
@@ -78,9 +80,7 @@ defmodule PearlWeb.Layouts do
           </ul>
         </div>
 
-        <button class="btn btn-ghost btn-sm btn-circle sm:hidden">
-          <.icon name="hero-magnifying-glass" class="size-4" />
-        </button>
+        <%!-- Mobile search button hidden until mobile search is implemented --%>
 
         <button
           :if={@show_ask}
