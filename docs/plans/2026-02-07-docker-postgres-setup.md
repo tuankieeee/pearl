@@ -12,7 +12,7 @@
 
 ---
 
-### Task 1: Create docker-compose.yml
+## Task 1: Create docker-compose.yml
 
 **Files:**
 - Create: `docker-compose.yml` (project root, next to `README.md`)
@@ -31,7 +31,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - pearl_pgdata:/var/lib/postgresql/data
+      - pearl_pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -56,7 +56,7 @@ git commit -m "feat: add docker-compose for Postgres 18 + pgvector"
 
 ---
 
-### Task 2: Add PEARL_DB_PORT to dev and test configs
+## Task 2: Add PEARL_DB_PORT to dev and test configs
 
 **Files:**
 - Modify: `pearl/config/dev.exs:4-11`
@@ -139,7 +139,7 @@ git commit -m "feat: make DB port configurable via PEARL_DB_PORT env var"
 
 ---
 
-### Task 3: Update README with Docker-first setup
+## Task 3: Update README with Docker-first setup
 
 **Files:**
 - Modify: `README.md`
@@ -263,7 +263,7 @@ git commit -m "docs: Docker-first setup instructions in README"
 
 ---
 
-### Task 4: Update CLAUDE.md
+## Task 4: Update CLAUDE.md
 
 **Files:**
 - Modify: `CLAUDE.md`
@@ -298,7 +298,7 @@ git commit -m "docs: add docker compose and PEARL_DB_PORT to CLAUDE.md"
 
 ---
 
-### Task 5: Final verification
+## Task 5: Final verification
 
 **Step 1: Run mix format**
 
