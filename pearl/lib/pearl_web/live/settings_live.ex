@@ -553,28 +553,13 @@ defmodule PearlWeb.SettingsLive do
   end
 
   # Task entry point for Task.Supervisor.start_child - re-indexes all ready repos
-  # Wrapped in a transaction to ensure atomic updates - if any repo fails, all changes are rolled back
   @doc false
   def reindex_repos_task do
     repos =
       Pearl.Repositories.list_repos()
       |> Enum.filter(&(&1.status == "ready"))
 
-    result =
-      Pearl.Repo.transaction(fn ->
-        Enum.reduce_while(repos, :ok, fn repo, :ok ->
-          try do
-            case Pearl.Rag.index_repo(repo) do
-              {:ok, _count} -> {:cont, :ok}
-              {:error, reason} -> {:halt, {:error, repo.name, inspect(reason)}}
-            end
-          rescue
-            e -> {:halt, {:error, repo.name, Exception.message(e)}}
-          end
-        end)
-      end)
-
-    case result do
+    case reindex_repos_in_transaction(repos) do
       {:ok, :ok} ->
         Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", :reindex_complete)
 
@@ -592,5 +577,21 @@ defmodule PearlWeb.SettingsLive do
           {:reindex_failed, ["Transaction failed: #{inspect(reason)}"]}
         )
     end
+  end
+
+  # Wrapped in a transaction to ensure atomic updates - if any repo fails, all changes are rolled back
+  defp reindex_repos_in_transaction(repos) do
+    Pearl.Repo.transaction(fn ->
+      Enum.reduce_while(repos, :ok, fn repo, :ok ->
+        try do
+          case Pearl.Rag.index_repo(repo) do
+            {:ok, _count} -> {:cont, :ok}
+            {:error, reason} -> {:halt, {:error, repo.name, inspect(reason)}}
+          end
+        rescue
+          e -> {:halt, {:error, repo.name, Exception.message(e)}}
+        end
+      end)
+    end)
   end
 end

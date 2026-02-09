@@ -23,6 +23,8 @@ defmodule Pearl.Settings do
 
   use GenServer
 
+  require Logger
+
   import Ecto.Query
   alias Pearl.Repo
   alias Pearl.Settings.Setting
@@ -61,8 +63,8 @@ defmodule Pearl.Settings do
 
   @doc "Initialize ETS table and load settings from DB."
   @deprecated "Use reset/0 for tests, or start_link/1 for application startup"
-  @spec init() :: :ok | {:error, term()}
-  def init do
+  @spec initialize() :: :ok | {:error, term()}
+  def initialize do
     reset()
   end
 
@@ -155,8 +157,6 @@ defmodule Pearl.Settings do
   end
 
   defp load_from_db do
-    require Logger
-
     try do
       Setting
       |> select([s], {s.key, s.value})
