@@ -7,6 +7,8 @@ defmodule PearlWeb.SettingsLive do
   def mount(_params, _session, socket) do
     settings = Settings.all()
 
+    resolved_path = Path.expand(settings["repos_path"])
+
     {:ok,
      assign(socket,
        page_title: "Settings",
@@ -18,8 +20,8 @@ defmodule PearlWeb.SettingsLive do
        dirty: false,
        openrouter_key_set: env_var_set?(settings["openrouter_api_key_env"]),
        ollama_host_set: env_var_set?(settings["ollama_host_env"]),
-       resolved_path: Path.expand(settings["repos_path"]),
-       path_exists: File.dir?(Path.expand(settings["repos_path"]))
+       resolved_path: resolved_path,
+       path_exists: File.dir?(resolved_path)
      )}
   end
 
@@ -402,6 +404,7 @@ defmodule PearlWeb.SettingsLive do
   def handle_event("validate", %{"settings" => params}, socket) do
     settings = Map.merge(socket.assigns.settings, params)
     dirty = settings != socket.assigns.initial_settings
+    resolved_path = Path.expand(settings["repos_path"])
 
     {:noreply,
      assign(socket,
@@ -409,11 +412,12 @@ defmodule PearlWeb.SettingsLive do
        dirty: dirty,
        openrouter_key_set: env_var_set?(settings["openrouter_api_key_env"]),
        ollama_host_set: env_var_set?(settings["ollama_host_env"]),
-       resolved_path: Path.expand(settings["repos_path"]),
-       path_exists: File.dir?(Path.expand(settings["repos_path"]))
+       resolved_path: resolved_path,
+       path_exists: File.dir?(resolved_path)
      )}
   end
 
+  @impl true
   def handle_event("save", %{"settings" => params}, socket) do
     settings = Map.merge(socket.assigns.settings, params)
 
@@ -428,8 +432,9 @@ defmodule PearlWeb.SettingsLive do
     end
   end
 
+  @impl true
   def handle_event("save_and_reindex", _params, socket) do
-    {:noreply, socket} = do_save(socket, socket.assigns.settings)
+    {:noreply, saved_socket} = do_save(socket, socket.assigns.settings)
 
     Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
       Pearl.Repositories.list_repos()
@@ -439,9 +444,10 @@ defmodule PearlWeb.SettingsLive do
       end)
     end)
 
-    {:noreply, put_flash(socket, :info, "Settings saved. Re-indexing started in background.")}
+    {:noreply, put_flash(saved_socket, :info, "Settings saved. Re-indexing started in background.")}
   end
 
+  @impl true
   def handle_event("save_without_reindex", _params, socket) do
     do_save(socket, socket.assigns.settings)
   end
@@ -474,8 +480,12 @@ defmodule PearlWeb.SettingsLive do
   defp validate_numeric_settings(settings) do
     Enum.reduce_while(@numeric_constraints, :ok, fn {key, {min, max}}, :ok ->
       case validate_integer(settings[key], min, max) do
-        :ok -> {:cont, :ok}
-        :error -> {:halt, {:error, "#{format_setting_name(key)} must be an integer between #{min} and #{max}"}}
+        :ok ->
+          {:cont, :ok}
+
+        :error ->
+          {:halt,
+           {:error, "#{format_setting_name(key)} must be an integer between #{min} and #{max}"}}
       end
     end)
   end

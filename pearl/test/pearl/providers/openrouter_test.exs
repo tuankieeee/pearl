@@ -7,13 +7,13 @@ defmodule Pearl.Providers.OpenRouterTest do
     setup do
       # Point the api key env var at a non-existent variable so Config returns nil
       original_env_var = Pearl.Settings.get("openrouter_api_key_env")
-      :ets.insert(:pearl_settings, {"openrouter_api_key_env", "PEARL_TEST_NO_KEY"})
+      Pearl.Settings.put("openrouter_api_key_env", "PEARL_TEST_NO_KEY")
 
       on_exit(fn ->
         if original_env_var do
-          :ets.insert(:pearl_settings, {"openrouter_api_key_env", original_env_var})
+          Pearl.Settings.put("openrouter_api_key_env", original_env_var)
         else
-          :ets.delete(:pearl_settings, "openrouter_api_key_env")
+          Pearl.Settings.put("openrouter_api_key_env", Pearl.Settings.defaults()["openrouter_api_key_env"])
         end
       end)
 
