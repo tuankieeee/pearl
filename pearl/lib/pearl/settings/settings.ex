@@ -47,10 +47,10 @@ defmodule Pearl.Settings do
   @doc "Initialize ETS table and load settings from DB."
   @spec init() :: :ok
   def init do
-    if :ets.whereis(@table) == :undefined do
+    try do
       :ets.new(@table, [:set, :public, :named_table])
-    else
-      :ets.delete_all_objects(@table)
+    rescue
+      ArgumentError -> :ets.delete_all_objects(@table)
     end
 
     load_from_db()

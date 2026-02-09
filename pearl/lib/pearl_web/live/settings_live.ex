@@ -5,6 +5,10 @@ defmodule PearlWeb.SettingsLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Pearl.PubSub, "settings:reindex")
+    end
+
     settings = Settings.all()
 
     resolved_path = Path.expand(settings["repos_path"])
@@ -408,7 +412,15 @@ defmodule PearlWeb.SettingsLive do
   def handle_event("validate", %{"settings" => params}, socket) do
     settings = Map.merge(socket.assigns.settings, params)
     dirty = settings != socket.assigns.initial_settings
-    resolved_path = Path.expand(settings["repos_path"])
+
+    # Only expand path if it changed to avoid redundant work
+    {resolved_path, path_exists} =
+      if settings["repos_path"] == socket.assigns.settings["repos_path"] do
+        {socket.assigns.resolved_path, socket.assigns.path_exists}
+      else
+        expanded = Path.expand(settings["repos_path"])
+        {expanded, File.dir?(expanded)}
+      end
 
     {:noreply,
      assign(socket,
@@ -417,7 +429,7 @@ defmodule PearlWeb.SettingsLive do
        openrouter_key_set: env_var_set?(settings["openrouter_api_key_env"]),
        ollama_host_set: env_var_set?(settings["ollama_host_env"]),
        resolved_path: resolved_path,
-       path_exists: File.dir?(resolved_path)
+       path_exists: path_exists
      )}
   end
 
@@ -439,11 +451,9 @@ defmodule PearlWeb.SettingsLive do
   def handle_event("save_and_reindex", _params, socket) do
     {:noreply, saved_socket} = do_save(socket, socket.assigns.settings)
 
-    Phoenix.PubSub.subscribe(Pearl.PubSub, "settings:reindex")
-
     Task.Supervisor.start_child(
       Pearl.TaskSupervisor,
-      {__MODULE__, :reindex_repos_task, []}
+      fn -> __MODULE__.reindex_repos_task() end
     )
 
     {:noreply,
@@ -538,6 +548,7 @@ defmodule PearlWeb.SettingsLive do
   end
 
   # Task entry point for Task.Supervisor.start_child - re-indexes all ready repos
+  @doc false
   def reindex_repos_task do
     repos =
       Pearl.Repositories.list_repos()

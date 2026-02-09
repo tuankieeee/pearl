@@ -223,7 +223,7 @@ defmodule PearlWeb.WikiLive do
     # analyze types correctly (MFA tuples are opaque to Dialyzer's type inference)
     task_fn = fn -> ask_task(pid, repo, question, history) end
 
-    case Task.Supervisor.start_child(Pearl.TaskSupervisor, task_fn, link: true) do
+    case Task.Supervisor.start_child(Pearl.TaskSupervisor, task_fn) do
       {:ok, _pid} ->
         {:noreply, socket}
 

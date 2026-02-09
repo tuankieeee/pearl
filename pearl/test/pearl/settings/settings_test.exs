@@ -36,6 +36,10 @@ defmodule Pearl.Settings.SettingsTest do
       Settings.put("chat_model", "model-b")
       assert Settings.get("chat_model") == "model-b"
     end
+
+    test "returns error for unknown key" do
+      assert {:error, :unknown_key} = Settings.put("nonexistent_key", "value")
+    end
   end
 
   describe "all/0" do
