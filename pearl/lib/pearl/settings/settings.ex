@@ -85,5 +85,7 @@ defmodule Pearl.Settings do
     |> Enum.each(fn {key, value} ->
       :ets.insert(@table, {key, value})
     end)
+
+    :ok
   end
 end

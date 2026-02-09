@@ -11,12 +11,7 @@ defmodule Pearl.Config do
   # --- Chat / Generation ---
 
   @spec chat_provider() :: :ollama | :openrouter
-  def chat_provider do
-    case Settings.get("chat_provider") do
-      "ollama" -> :ollama
-      _ -> :openrouter
-    end
-  end
+  def chat_provider, do: parse_provider(Settings.get("chat_provider"))
 
   @spec chat_model() :: String.t()
   def chat_model do
@@ -26,12 +21,11 @@ defmodule Pearl.Config do
   # --- Embeddings ---
 
   @spec embedding_provider() :: :ollama | :openrouter
-  def embedding_provider do
-    case Settings.get("embedding_provider") do
-      "ollama" -> :ollama
-      _ -> :openrouter
-    end
-  end
+  def embedding_provider, do: parse_provider(Settings.get("embedding_provider"))
+
+  @spec parse_provider(String.t()) :: :ollama | :openrouter
+  defp parse_provider("ollama"), do: :ollama
+  defp parse_provider(_), do: :openrouter
 
   @spec embedding_model() :: String.t()
   def embedding_model do

@@ -51,7 +51,14 @@ defmodule Pearl.Settings.SettingsTest do
   describe "defaults/0" do
     test "returns all default keys" do
       defaults = Settings.defaults()
-      assert defaults == Settings.defaults()
+
+      expected_keys = ~w(
+        chat_provider chat_model embedding_provider embedding_model
+        openrouter_api_key_env ollama_host_env embedding_batch_size
+        file_read_concurrency wiki_page_timeout repos_path
+      )
+
+      assert Map.keys(defaults) |> Enum.sort() == Enum.sort(expected_keys)
     end
   end
 

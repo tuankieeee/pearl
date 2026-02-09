@@ -1,5 +1,5 @@
 defmodule Pearl.Providers.OpenRouterTest do
-  use ExUnit.Case, async: false
+  use Pearl.DataCase, async: false
 
   alias Pearl.Providers.OpenRouter
 
@@ -13,7 +13,8 @@ defmodule Pearl.Providers.OpenRouterTest do
         if original_env_var do
           Pearl.Settings.put("openrouter_api_key_env", original_env_var)
         else
-          Pearl.Settings.put("openrouter_api_key_env", Pearl.Settings.defaults()["openrouter_api_key_env"])
+          default_key = Pearl.Settings.defaults()["openrouter_api_key_env"]
+          Pearl.Settings.put("openrouter_api_key_env", default_key)
         end
       end)
 

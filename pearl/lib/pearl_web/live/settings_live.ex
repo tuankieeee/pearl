@@ -421,8 +421,7 @@ defmodule PearlWeb.SettingsLive do
   def handle_event("save", %{"settings" => params}, socket) do
     settings = Map.merge(socket.assigns.settings, params)
 
-    if settings["embedding_provider"] != socket.assigns.initial_settings["embedding_provider"] or
-         settings["embedding_model"] != socket.assigns.initial_settings["embedding_model"] do
+    if embedding_config_changed?(settings, socket.assigns.initial_settings) do
       {:noreply,
        socket
        |> assign(settings: settings)
@@ -444,7 +443,8 @@ defmodule PearlWeb.SettingsLive do
       end)
     end)
 
-    {:noreply, put_flash(saved_socket, :info, "Settings saved. Re-indexing started in background.")}
+    {:noreply,
+     put_flash(saved_socket, :info, "Settings saved. Re-indexing started in background.")}
   end
 
   @impl true
@@ -512,4 +512,9 @@ defmodule PearlWeb.SettingsLive do
   end
 
   defp env_var_set?(_), do: false
+
+  defp embedding_config_changed?(current, initial) do
+    current["embedding_provider"] != initial["embedding_provider"] or
+      current["embedding_model"] != initial["embedding_model"]
+  end
 end

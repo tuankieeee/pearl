@@ -13,6 +13,9 @@ defmodule Pearl.Settings.Setting do
     timestamps()
   end
 
+  @doc """
+  Creates a changeset for a setting with the given attributes.
+  """
   def changeset(setting, attrs) do
     setting
     |> cast(attrs, [:key, :value])
