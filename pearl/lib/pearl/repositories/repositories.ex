@@ -219,7 +219,7 @@ defmodule Pearl.Repositories do
   end
 
   defp repo_path(repo) do
-    base = Application.get_env(:pearl, :storage)[:repos_path] |> Path.expand()
+    base = Pearl.Config.repos_path() |> Path.expand()
     Path.join([base, repo.provider, repo.owner, repo.name])
   end
 
