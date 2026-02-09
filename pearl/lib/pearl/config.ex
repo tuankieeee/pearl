@@ -44,6 +44,16 @@ defmodule Pearl.Config do
   defp parse_provider("ollama"), do: :ollama
   defp parse_provider(_), do: :openrouter
 
+  @spec safe_integer(String.t() | nil, pos_integer()) :: pos_integer()
+  defp safe_integer(value, default) when is_binary(value) do
+    case Integer.parse(value) do
+      {int, ""} when int > 0 -> int
+      _ -> default
+    end
+  end
+
+  defp safe_integer(_, default), do: default
+
   @doc """
   Returns the model identifier for embedding generation.
 
@@ -99,7 +109,7 @@ defmodule Pearl.Config do
   """
   @spec embedding_batch_size() :: pos_integer()
   def embedding_batch_size do
-    Settings.get("embedding_batch_size") |> String.to_integer()
+    Settings.get("embedding_batch_size") |> safe_integer(100)
   end
 
   @doc """
@@ -109,7 +119,7 @@ defmodule Pearl.Config do
   """
   @spec file_read_concurrency() :: pos_integer()
   def file_read_concurrency do
-    Settings.get("file_read_concurrency") |> String.to_integer()
+    Settings.get("file_read_concurrency") |> safe_integer(10)
   end
 
   @doc """
@@ -119,7 +129,7 @@ defmodule Pearl.Config do
   """
   @spec wiki_page_timeout() :: pos_integer()
   def wiki_page_timeout do
-    Settings.get("wiki_page_timeout") |> String.to_integer()
+    Settings.get("wiki_page_timeout") |> safe_integer(300_000)
   end
 
   # --- Storage ---

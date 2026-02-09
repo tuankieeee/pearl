@@ -41,7 +41,7 @@ defmodule PearlWeb.SettingsLive do
           </p>
         </div>
 
-        <.form for={%{}} as={:settings} phx-change="validate" phx-submit="save">
+        <.form for={to_form(%{}, as: :settings)} phx-change="validate" phx-submit="save">
           <%!-- Card 1: LLM Providers --%>
           <div class="card bg-base-100 shadow-md animate-fade-up" style="animation-delay: 75ms">
             <div class="card-body">
@@ -560,7 +560,7 @@ defmodule PearlWeb.SettingsLive do
           Pearl.Rag.index_repo(repo)
           {:ok, repo.name}
         rescue
-          e -> {:error, repo.name, Exception.message(e)}
+          e in Exception -> {:error, repo.name, Exception.message(e)}
         end
       end)
 

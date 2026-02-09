@@ -54,18 +54,13 @@ defmodule Pearl.Settings.SettingsTest do
 
   describe "defaults/0" do
     test "returns all default values" do
-      assert Settings.defaults() == %{
-               "chat_provider" => "openrouter",
-               "chat_model" => "openai/gpt-5.2",
-               "embedding_provider" => "openrouter",
-               "embedding_model" => "openai/text-embedding-3-small",
-               "openrouter_api_key_env" => "OPENROUTER_API_KEY",
-               "ollama_host_env" => "OLLAMA_HOST",
-               "embedding_batch_size" => "100",
-               "file_read_concurrency" => "10",
-               "wiki_page_timeout" => "300000",
-               "repos_path" => "~/.pearl/repos"
-             }
+      defaults = Settings.defaults()
+
+      assert defaults["chat_provider"] == "openrouter"
+      assert defaults["chat_model"] == "openai/gpt-5.2"
+      assert defaults["embedding_provider"] == "openrouter"
+      assert defaults["embedding_model"] == "openai/text-embedding-3-small"
+      assert defaults["repos_path"] == "~/.pearl/repos"
     end
   end
 

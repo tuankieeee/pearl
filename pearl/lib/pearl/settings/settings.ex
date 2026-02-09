@@ -47,10 +47,9 @@ defmodule Pearl.Settings do
   @doc "Initialize ETS table and load settings from DB."
   @spec init() :: :ok
   def init do
-    try do
-      :ets.new(@table, [:set, :public, :named_table])
-    rescue
-      ArgumentError -> :ets.delete_all_objects(@table)
+    case :ets.whereis(@table) do
+      :undefined -> :ets.new(@table, [:set, :public, :named_table])
+      _tid -> :ets.delete_all_objects(@table)
     end
 
     load_from_db()
@@ -66,7 +65,7 @@ defmodule Pearl.Settings do
   end
 
   @doc "Set a setting value. Writes to DB and updates ETS cache."
-  @spec put(String.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t() | :unknown_key}
+  @spec put(String.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t()} | {:error, :unknown_key}
   def put(key, value) do
     if not Map.has_key?(@defaults, key) do
       {:error, :unknown_key}
