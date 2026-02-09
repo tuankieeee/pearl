@@ -494,14 +494,14 @@ defmodule PearlWeb.SettingsLive do
       :ok ->
         results =
           settings
-          |> Enum.filter(fn {key, _value} -> Map.has_key?(Settings.defaults(), key) end)
+          |> Enum.filter(fn {key, _value} -> Settings.valid_key?(key) end)
           |> Enum.map(fn {key, value} -> Settings.put(key, value) end)
 
         case Enum.find(results, &match?({:error, _}, &1)) do
           nil ->
             {:noreply,
              socket
-             |> assign(initial_settings: settings, dirty: false)
+             |> assign(settings: settings, initial_settings: settings, dirty: false)
              |> put_flash(:info, "Settings saved.")}
 
           {:error, _changeset} ->
@@ -572,33 +572,39 @@ defmodule PearlWeb.SettingsLive do
       Pearl.Repositories.list_repos()
       |> Enum.filter(&(&1.status == "ready"))
 
-    case reindex_repos_in_transaction(repos) do
+    case reindex_repos_sequentially(repos) do
       {:ok, :ok} ->
         Phoenix.PubSub.broadcast(Pearl.PubSub, topic, :reindex_complete)
 
-      {:ok, {:error, name, msg}} ->
+      {:ok, {:errors, errors}} ->
+        error_messages = Enum.map(errors, fn {name, msg} -> "#{name}: #{msg}" end)
+
         Phoenix.PubSub.broadcast(
           Pearl.PubSub,
           topic,
-          {:reindex_failed, ["#{name}: #{msg}"]}
+          {:reindex_failed, error_messages}
         )
     end
   end
 
   # Process repos sequentially without transaction - LLM API calls should not hold DB locks
-  defp reindex_repos_in_transaction(repos) do
-    result =
-      Enum.reduce_while(repos, :ok, fn repo, :ok ->
+  # Collects all errors instead of stopping at the first one
+  defp reindex_repos_sequentially(repos) do
+    errors =
+      Enum.reduce(repos, [], fn repo, errors ->
         try do
           case Pearl.Rag.index_repo(repo) do
-            {:ok, _count} -> {:cont, :ok}
-            {:error, reason} -> {:halt, {:error, repo.name, inspect(reason)}}
+            {:ok, _count} -> errors
+            {:error, reason} -> [{repo.name, inspect(reason)} | errors]
           end
         rescue
-          e -> {:halt, {:error, repo.name, Exception.message(e)}}
+          e -> [{repo.name, Exception.message(e)} | errors]
         end
       end)
 
-    {:ok, result}
+    case errors do
+      [] -> {:ok, :ok}
+      _ -> {:ok, {:errors, Enum.reverse(errors)}}
+    end
   end
 end

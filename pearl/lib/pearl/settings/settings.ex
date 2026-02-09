@@ -55,6 +55,10 @@ defmodule Pearl.Settings do
   @spec defaults() :: %{String.t() => String.t()}
   def defaults, do: @defaults
 
+  @doc "Returns true if the key is a known settings key."
+  @spec valid_key?(String.t()) :: boolean()
+  def valid_key?(key), do: Map.has_key?(@defaults, key)
+
   @doc "Reset ETS cache and reload settings from DB. Useful in tests for clean state."
   @spec reset() :: :ok | {:error, term()}
   def reset do
@@ -89,6 +93,7 @@ defmodule Pearl.Settings do
     {:reply, result, state}
   end
 
+  @impl true
   def handle_call({:put, key, value}, _from, state) do
     result = do_put(key, value)
     {:reply, result, state}
@@ -129,7 +134,7 @@ defmodule Pearl.Settings do
   end
 
   defp do_put(key, value) do
-    if not Map.has_key?(@defaults, key) do
+    if not valid_key?(key) do
       {:error, :unknown_key}
     else
       now = DateTime.utc_now()

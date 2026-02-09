@@ -7,18 +7,8 @@ defmodule Pearl.Providers.OpenRouterTest do
   describe "chat/3 without API key" do
     setup do
       # Point the api key env var at a non-existent variable so Config returns nil
-      original_env_var = Pearl.Settings.get("openrouter_api_key_env")
       Pearl.Settings.put("openrouter_api_key_env", "PEARL_TEST_NO_KEY")
-
-      on_exit(fn ->
-        if original_env_var do
-          Pearl.Settings.put("openrouter_api_key_env", original_env_var)
-        else
-          default_key = Pearl.Settings.defaults()["openrouter_api_key_env"]
-          Pearl.Settings.put("openrouter_api_key_env", default_key)
-        end
-      end)
-
+      on_exit(fn -> Pearl.Settings.reset() end)
       :ok
     end
 
