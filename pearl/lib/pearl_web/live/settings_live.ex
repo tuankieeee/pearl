@@ -435,12 +435,31 @@ defmodule PearlWeb.SettingsLive do
   def handle_event("save_and_reindex", _params, socket) do
     {:noreply, saved_socket} = do_save(socket, socket.assigns.settings)
 
+    Phoenix.PubSub.subscribe(Pearl.PubSub, "settings:reindex")
+
     Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
-      Pearl.Repositories.list_repos()
-      |> Enum.filter(&(&1.status == "ready"))
-      |> Enum.each(fn repo ->
-        Pearl.Rag.index_repo(repo)
-      end)
+      repos =
+        Pearl.Repositories.list_repos()
+        |> Enum.filter(&(&1.status == "ready"))
+
+      results =
+        Enum.map(repos, fn repo ->
+          try do
+            Pearl.Rag.index_repo(repo)
+            {:ok, repo.name}
+          rescue
+            e -> {:error, repo.name, Exception.message(e)}
+          end
+        end)
+
+      errors = Enum.filter(results, &match?({:error, _, _}, &1))
+
+      if errors == [] do
+        Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", :reindex_complete)
+      else
+        error_msgs = Enum.map(errors, fn {:error, name, msg} -> "#{name}: #{msg}" end)
+        Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", {:reindex_failed, error_msgs})
+      end
     end)
 
     {:noreply,
@@ -450,6 +469,17 @@ defmodule PearlWeb.SettingsLive do
   @impl true
   def handle_event("save_without_reindex", _params, socket) do
     do_save(socket, socket.assigns.settings)
+  end
+
+  @impl true
+  def handle_info(:reindex_complete, socket) do
+    {:noreply, put_flash(socket, :info, "Re-indexing completed successfully.")}
+  end
+
+  @impl true
+  def handle_info({:reindex_failed, errors}, socket) do
+    error_msg = "Re-indexing failed for: " <> Enum.join(errors, "; ")
+    {:noreply, put_flash(socket, :error, error_msg)}
   end
 
   defp do_save(socket, settings) do

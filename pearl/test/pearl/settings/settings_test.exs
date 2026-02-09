@@ -49,16 +49,19 @@ defmodule Pearl.Settings.SettingsTest do
   end
 
   describe "defaults/0" do
-    test "returns all default keys" do
-      defaults = Settings.defaults()
-
-      expected_keys = ~w(
-        chat_provider chat_model embedding_provider embedding_model
-        openrouter_api_key_env ollama_host_env embedding_batch_size
-        file_read_concurrency wiki_page_timeout repos_path
-      )
-
-      assert Map.keys(defaults) |> Enum.sort() == Enum.sort(expected_keys)
+    test "returns all default values" do
+      assert Settings.defaults() == %{
+               "chat_provider" => "openrouter",
+               "chat_model" => "openai/gpt-5.2",
+               "embedding_provider" => "openrouter",
+               "embedding_model" => "openai/text-embedding-3-small",
+               "openrouter_api_key_env" => "OPENROUTER_API_KEY",
+               "ollama_host_env" => "OLLAMA_HOST",
+               "embedding_batch_size" => "100",
+               "file_read_concurrency" => "10",
+               "wiki_page_timeout" => "300000",
+               "repos_path" => "~/.pearl/repos"
+             }
     end
   end
 

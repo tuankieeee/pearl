@@ -51,23 +51,27 @@ defmodule Pearl.Settings do
   end
 
   @doc "Set a setting value. Writes to DB and updates ETS cache."
-  @spec put(String.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t()}
+  @spec put(String.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t() | :unknown_key}
   def put(key, value) do
-    result =
-      %Setting{}
-      |> Setting.changeset(%{key: key, value: value})
-      |> Repo.insert(
-        on_conflict: [set: [value: value, updated_at: DateTime.utc_now()]],
-        conflict_target: :key
-      )
+    if not Map.has_key?(@defaults, key) do
+      {:error, :unknown_key}
+    else
+      result =
+        %Setting{}
+        |> Setting.changeset(%{key: key, value: value})
+        |> Repo.insert(
+          on_conflict: [set: [value: value, updated_at: DateTime.utc_now()]],
+          conflict_target: :key
+        )
 
-    case result do
-      {:ok, _setting} ->
-        :ets.insert(@table, {key, value})
-        :ok
+      case result do
+        {:ok, _setting} ->
+          :ets.insert(@table, {key, value})
+          :ok
 
-      {:error, changeset} ->
-        {:error, changeset}
+        {:error, changeset} ->
+          {:error, changeset}
+      end
     end
   end
 
