@@ -1,4 +1,5 @@
 defmodule Pearl.Providers.OpenRouterTest do
+  # async: false - modifies global Pearl.Settings state
   use Pearl.DataCase, async: false
 
   alias Pearl.Providers.OpenRouter

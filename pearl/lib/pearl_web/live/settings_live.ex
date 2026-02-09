@@ -553,29 +553,44 @@ defmodule PearlWeb.SettingsLive do
   end
 
   # Task entry point for Task.Supervisor.start_child - re-indexes all ready repos
+  # Wrapped in a transaction to ensure atomic updates - if any repo fails, all changes are rolled back
   @doc false
   def reindex_repos_task do
     repos =
       Pearl.Repositories.list_repos()
       |> Enum.filter(&(&1.status == "ready"))
 
-    results =
-      Enum.map(repos, fn repo ->
-        try do
-          Pearl.Rag.index_repo(repo)
-          {:ok, repo.name}
-        rescue
-          e -> {:error, repo.name, Exception.message(e)}
-        end
+    result =
+      Pearl.Repo.transaction(fn ->
+        Enum.reduce_while(repos, :ok, fn repo, :ok ->
+          try do
+            case Pearl.Rag.index_repo(repo) do
+              {:ok, _count} -> {:cont, :ok}
+              {:error, reason} -> {:halt, {:error, repo.name, inspect(reason)}}
+            end
+          rescue
+            e -> {:halt, {:error, repo.name, Exception.message(e)}}
+          end
+        end)
       end)
 
-    errors = Enum.filter(results, &match?({:error, _, _}, &1))
+    case result do
+      {:ok, :ok} ->
+        Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", :reindex_complete)
 
-    if errors == [] do
-      Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", :reindex_complete)
-    else
-      error_msgs = Enum.map(errors, fn {:error, name, msg} -> "#{name}: #{msg}" end)
-      Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", {:reindex_failed, error_msgs})
+      {:ok, {:error, name, msg}} ->
+        Phoenix.PubSub.broadcast(
+          Pearl.PubSub,
+          "settings:reindex",
+          {:reindex_failed, ["#{name}: #{msg}"]}
+        )
+
+      {:error, reason} ->
+        Phoenix.PubSub.broadcast(
+          Pearl.PubSub,
+          "settings:reindex",
+          {:reindex_failed, ["Transaction failed: #{inspect(reason)}"]}
+        )
     end
   end
 end

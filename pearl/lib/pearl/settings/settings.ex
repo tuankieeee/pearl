@@ -63,8 +63,7 @@ defmodule Pearl.Settings do
   @deprecated "Use reset/0 for tests, or start_link/1 for application startup"
   @spec init() :: :ok | {:error, term()}
   def init do
-    do_init_table()
-    load_from_db()
+    reset()
   end
 
   # --- GenServer Callbacks ---
@@ -156,6 +155,8 @@ defmodule Pearl.Settings do
   end
 
   defp load_from_db do
+    require Logger
+
     try do
       Setting
       |> select([s], {s.key, s.value})
@@ -166,9 +167,13 @@ defmodule Pearl.Settings do
 
       :ok
     rescue
-      e -> {:error, e}
+      e ->
+        Logger.warning("Failed to load settings from DB: #{Exception.message(e)}")
+        {:error, e}
     catch
-      :exit, reason -> {:error, reason}
+      :exit, reason ->
+        Logger.warning("Failed to load settings from DB (exit): #{inspect(reason)}")
+        {:error, reason}
     end
   end
 end
