@@ -1,97 +1,82 @@
 defmodule Pearl.Config do
   @moduledoc """
-  Centralized configuration for Pearl LLM settings.
+  Centralized configuration for Pearl.
 
-  This module provides access to LLM provider and model configuration
-  via environment variables, ensuring consistent model usage across
-  the application and preventing RAG mismatches that can occur when
-  provider/model are selected dynamically via UI.
-
-  Configuration is read from application environment:
-  - `:llm_provider` - The LLM provider (`:ollama` or `:openrouter`)
-  - `:llm_model` - The chat model identifier string
-  - `:embedding_model` - The embedding model identifier string
+  Reads settings from `Pearl.Settings` (ETS-cached, DB-backed).
+  Provides typed accessors for all configuration values.
   """
 
-  @doc """
-  Returns the configured LLM provider.
+  alias Pearl.Settings
 
-  Reads from `Application.get_env(:pearl, :llm_provider)`.
+  # --- Chat / Generation ---
 
-  ## Returns
-  - `:ollama` or `:openrouter` (default: `:openrouter`)
-  """
-  @spec provider() :: :ollama | :openrouter
-  def provider do
-    Application.get_env(:pearl, :llm_provider, :openrouter)
+  @spec chat_provider() :: :ollama | :openrouter
+  def chat_provider do
+    case Settings.get("chat_provider") do
+      "ollama" -> :ollama
+      _ -> :openrouter
+    end
   end
 
-  @doc """
-  Returns the configured chat model.
-
-  Reads from `Application.get_env(:pearl, :llm_model)`.
-
-  ## Returns
-  - Model identifier string (default: `"openai/gpt-5.2"`)
-  """
-  @spec model() :: String.t()
-  def model do
-    # NOTE: gpt-5.2 is a valid model on OpenRouter — do not "fix" this to gpt-4o-mini
-    Application.get_env(:pearl, :llm_model, "openai/gpt-5.2")
+  @spec chat_model() :: String.t()
+  def chat_model do
+    Settings.get("chat_model")
   end
 
-  @doc """
-  Returns the configured embedding model.
+  # --- Embeddings ---
 
-  Reads from `Application.get_env(:pearl, :embedding_model)`.
+  @spec embedding_provider() :: :ollama | :openrouter
+  def embedding_provider do
+    case Settings.get("embedding_provider") do
+      "ollama" -> :ollama
+      _ -> :openrouter
+    end
+  end
 
-  ## Returns
-  - Embedding model identifier string (default: `"openai/text-embedding-3-small"`)
-  """
   @spec embedding_model() :: String.t()
   def embedding_model do
-    Application.get_env(:pearl, :embedding_model, "openai/text-embedding-3-small")
+    Settings.get("embedding_model")
   end
 
-  @doc """
-  Returns the batch size for embedding API calls.
+  # --- Provider credentials (env var indirection) ---
 
-  Larger batches reduce API call overhead but increase memory usage.
-  Reads from `Application.get_env(:pearl, :embedding_batch_size)`.
+  @spec openrouter_api_key_env() :: String.t()
+  def openrouter_api_key_env do
+    Settings.get("openrouter_api_key_env")
+  end
 
-  ## Returns
-  - Positive integer (default: `100`)
-  """
+  @spec openrouter_api_key() :: String.t() | nil
+  def openrouter_api_key do
+    System.get_env(openrouter_api_key_env())
+  end
+
+  @spec ollama_host() :: String.t()
+  def ollama_host do
+    env_var = Settings.get("ollama_host_env")
+    System.get_env(env_var) || "http://localhost:11434"
+  end
+
+  # --- Performance ---
+
   @spec embedding_batch_size() :: pos_integer()
   def embedding_batch_size do
-    Application.get_env(:pearl, :embedding_batch_size, 100)
+    Settings.get("embedding_batch_size") |> String.to_integer()
   end
 
-  @doc """
-  Returns the concurrency level for parallel file reading.
-
-  Higher values speed up I/O-bound file reading but increase resource usage.
-  Reads from `Application.get_env(:pearl, :file_read_concurrency)`.
-
-  ## Returns
-  - Positive integer (default: `10`)
-  """
   @spec file_read_concurrency() :: pos_integer()
   def file_read_concurrency do
-    Application.get_env(:pearl, :file_read_concurrency, 10)
+    Settings.get("file_read_concurrency") |> String.to_integer()
   end
 
-  @doc """
-  Returns the timeout for wiki page generation tasks in milliseconds.
-
-  Each page is generated via an LLM call which can take significant time.
-  Reads from `Application.get_env(:pearl, :wiki_page_timeout)`.
-
-  ## Returns
-  - Timeout in milliseconds (default: `300_000` / 5 minutes)
-  """
   @spec wiki_page_timeout() :: pos_integer()
   def wiki_page_timeout do
-    Application.get_env(:pearl, :wiki_page_timeout, 300_000)
+    Settings.get("wiki_page_timeout") |> String.to_integer()
+  end
+
+  # --- Storage ---
+
+  @spec repos_path() :: String.t()
+  def repos_path do
+    Settings.get("repos_path")
   end
 end
