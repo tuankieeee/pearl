@@ -5,8 +5,11 @@ defmodule PearlWeb.SettingsLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    # Generate unique topic for this session to avoid stale messages from previous sessions
+    reindex_topic = "settings:reindex:#{System.unique_integer([:positive])}"
+
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(Pearl.PubSub, "settings:reindex")
+      Phoenix.PubSub.subscribe(Pearl.PubSub, reindex_topic)
     end
 
     settings = Settings.all()
@@ -25,7 +28,8 @@ defmodule PearlWeb.SettingsLive do
        openrouter_key_set: env_var_set?(settings["openrouter_api_key_env"]),
        ollama_host_set: env_var_set?(settings["ollama_host_env"]),
        resolved_path: resolved_path,
-       path_exists: File.dir?(resolved_path)
+       path_exists: File.dir?(resolved_path),
+       reindex_topic: reindex_topic
      )}
   end
 
@@ -239,6 +243,7 @@ defmodule PearlWeb.SettingsLive do
                     value={@settings["embedding_batch_size"]}
                     min="1"
                     max="500"
+                    phx-debounce="300"
                     class="input input-bordered input-sm w-full"
                   />
                   <label class="label">
@@ -257,6 +262,7 @@ defmodule PearlWeb.SettingsLive do
                     value={@settings["file_read_concurrency"]}
                     min="1"
                     max="100"
+                    phx-debounce="300"
                     class="input input-bordered input-sm w-full"
                   />
                   <label class="label">
@@ -279,6 +285,7 @@ defmodule PearlWeb.SettingsLive do
                       min="10000"
                       max="600000"
                       step="1000"
+                      phx-debounce="300"
                       class="input input-bordered input-sm join-item w-full"
                     />
                     <span class="btn btn-sm btn-disabled join-item border-base-content/20 bg-base-200 text-base-content/40 no-animation">
@@ -450,10 +457,11 @@ defmodule PearlWeb.SettingsLive do
   @impl true
   def handle_event("save_and_reindex", _params, socket) do
     {:noreply, saved_socket} = do_save(socket, socket.assigns.settings)
+    reindex_topic = socket.assigns.reindex_topic
 
     Task.Supervisor.start_child(
       Pearl.TaskSupervisor,
-      fn -> __MODULE__.reindex_repos_task() end
+      fn -> __MODULE__.reindex_repos_task(reindex_topic) end
     )
 
     {:noreply,
@@ -554,34 +562,34 @@ defmodule PearlWeb.SettingsLive do
 
   # Task entry point for Task.Supervisor.start_child - re-indexes all ready repos
   @doc false
-  def reindex_repos_task do
+  def reindex_repos_task(topic) do
     repos =
       Pearl.Repositories.list_repos()
       |> Enum.filter(&(&1.status == "ready"))
 
     case reindex_repos_in_transaction(repos) do
       {:ok, :ok} ->
-        Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", :reindex_complete)
+        Phoenix.PubSub.broadcast(Pearl.PubSub, topic, :reindex_complete)
 
       {:ok, {:error, name, msg}} ->
         Phoenix.PubSub.broadcast(
           Pearl.PubSub,
-          "settings:reindex",
+          topic,
           {:reindex_failed, ["#{name}: #{msg}"]}
         )
 
       {:error, reason} ->
         Phoenix.PubSub.broadcast(
           Pearl.PubSub,
-          "settings:reindex",
+          topic,
           {:reindex_failed, ["Transaction failed: #{inspect(reason)}"]}
         )
     end
   end
 
-  # Wrapped in a transaction to ensure atomic updates - if any repo fails, all changes are rolled back
+  # Process repos sequentially without transaction - LLM API calls should not hold DB locks
   defp reindex_repos_in_transaction(repos) do
-    Pearl.Repo.transaction(fn ->
+    result =
       Enum.reduce_while(repos, :ok, fn repo, :ok ->
         try do
           case Pearl.Rag.index_repo(repo) do
@@ -592,6 +600,7 @@ defmodule PearlWeb.SettingsLive do
           e -> {:halt, {:error, repo.name, Exception.message(e)}}
         end
       end)
-    end)
+
+    {:ok, result}
   end
 end

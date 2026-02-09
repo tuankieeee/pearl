@@ -62,7 +62,7 @@ defmodule Pearl.Settings do
   end
 
   @doc "Initialize ETS table and load settings from DB."
-  @deprecated "Use reset/0 for tests, or start_link/1 for application startup"
+  @deprecated "Use reset/0 instead"
   @spec initialize() :: :ok | {:error, term()}
   def initialize do
     reset()
@@ -130,11 +130,13 @@ defmodule Pearl.Settings do
     if not Map.has_key?(@defaults, key) do
       {:error, :unknown_key}
     else
+      now = DateTime.utc_now()
+
       result =
         %Setting{}
         |> Setting.changeset(%{key: key, value: value})
         |> Repo.insert(
-          on_conflict: [set: [value: value, updated_at: DateTime.utc_now()]],
+          on_conflict: [set: [value: value, updated_at: now]],
           conflict_target: :key
         )
 
