@@ -41,8 +41,7 @@ defmodule PearlWeb.SettingsLive do
           <div class="card bg-base-100 shadow-md animate-fade-up" style="animation-delay: 75ms">
             <div class="card-body">
               <h2 class="card-title text-lg">
-                <.icon name="hero-cpu-chip" class="size-5 text-primary" />
-                LLM Providers
+                <.icon name="hero-cpu-chip" class="size-5 text-primary" /> LLM Providers
               </h2>
               <p class="text-sm text-base-content/50 -mt-1">
                 Select which providers and models to use for wiki generation and embeddings.
@@ -211,8 +210,7 @@ defmodule PearlWeb.SettingsLive do
           <div class="card bg-base-100 shadow-md animate-fade-up mt-8" style="animation-delay: 150ms">
             <div class="card-body">
               <h2 class="card-title text-lg">
-                <.icon name="hero-bolt" class="size-5 text-primary" />
-                Performance
+                <.icon name="hero-bolt" class="size-5 text-primary" /> Performance
               </h2>
               <p class="text-sm text-base-content/50 -mt-1">
                 Tune concurrency and timeout parameters for wiki generation.
@@ -290,8 +288,7 @@ defmodule PearlWeb.SettingsLive do
           <div class="card bg-base-100 shadow-md animate-fade-up mt-8" style="animation-delay: 225ms">
             <div class="card-body">
               <h2 class="card-title text-lg">
-                <.icon name="hero-folder-open" class="size-5 text-primary" />
-                Storage
+                <.icon name="hero-folder-open" class="size-5 text-primary" /> Storage
               </h2>
               <p class="text-sm text-base-content/50 -mt-1">
                 Where cloned repositories are stored on disk.
@@ -346,13 +343,11 @@ defmodule PearlWeb.SettingsLive do
           >
             <div>
               <p :if={@dirty} class="text-xs text-warning flex items-center gap-1.5">
-                <.icon name="hero-exclamation-circle-mini" class="size-4" />
-                You have unsaved changes.
+                <.icon name="hero-exclamation-circle-mini" class="size-4" /> You have unsaved changes.
               </p>
             </div>
             <button type="submit" class="btn btn-primary" disabled={!@dirty}>
-              <.icon name="hero-check" class="size-4" />
-              Save Settings
+              <.icon name="hero-check" class="size-4" /> Save Settings
             </button>
           </div>
         </.form>
@@ -378,8 +373,7 @@ defmodule PearlWeb.SettingsLive do
                 phx-click="save_and_reindex"
                 class="btn btn-warning w-full sm:w-auto"
               >
-                <.icon name="hero-arrow-path" class="size-4" />
-                Save &amp; Re-index All
+                <.icon name="hero-arrow-path" class="size-4" /> Save &amp; Re-index All
               </button>
               <button
                 type="button"

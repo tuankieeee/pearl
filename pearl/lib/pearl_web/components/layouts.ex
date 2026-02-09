@@ -58,7 +58,13 @@ defmodule PearlWeb.Layouts do
 
       <div class="navbar-end gap-1">
         <div class="relative hidden sm:block mr-2">
-          <.form for={@search_form} id="navbar-search" phx-change="search" phx-submit="search" phx-debounce="300">
+          <.form
+            for={@search_form}
+            id="navbar-search"
+            phx-change="search"
+            phx-submit="search"
+            phx-debounce="300"
+          >
             <.icon
               name="hero-magnifying-glass"
               class="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/30"
