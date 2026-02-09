@@ -58,6 +58,12 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
+// Handle show-modal events from LiveView
+window.addEventListener("phx:show-modal", (e) => {
+  const dialog = document.getElementById(e.detail.id)
+  if (dialog) dialog.showModal()
+})
+
 // The lines below enable quality of life phoenix_live_reload
 // development features:
 //
