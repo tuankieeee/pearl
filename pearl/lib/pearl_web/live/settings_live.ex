@@ -560,7 +560,7 @@ defmodule PearlWeb.SettingsLive do
           Pearl.Rag.index_repo(repo)
           {:ok, repo.name}
         rescue
-          e in Exception -> {:error, repo.name, Exception.message(e)}
+          e -> {:error, repo.name, Exception.message(e)}
         end
       end)
 
