@@ -67,4 +67,12 @@ defmodule Pearl.Settings.SettingsTest do
       assert defaults == @defaults
     end
   end
+
+  describe "application startup" do
+    test "settings are accessible after app starts" do
+      # App is already started by test_helper.exs
+      # Just verify get/1 works without calling init manually
+      assert is_binary(Pearl.Settings.get("chat_provider"))
+    end
+  end
 end
