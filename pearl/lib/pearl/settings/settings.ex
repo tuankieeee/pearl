@@ -152,9 +152,7 @@ defmodule Pearl.Settings do
   end
 
   defp do_put(key, value) do
-    unless valid_key?(key) do
-      {:error, :unknown_key}
-    else
+    if valid_key?(key) do
       now = DateTime.utc_now()
 
       result =
@@ -173,6 +171,8 @@ defmodule Pearl.Settings do
         {:error, changeset} ->
           {:error, changeset}
       end
+    else
+      {:error, :unknown_key}
     end
   end
 

@@ -69,11 +69,6 @@ defmodule Pearl.Config do
     default
   end
 
-  defp safe_integer(other, default) do
-    Logger.warning("Expected string or nil, got #{inspect(other)}, using default #{default}")
-    default
-  end
-
   @doc """
   Returns the model identifier for embedding generation.
 

@@ -450,14 +450,15 @@ defmodule PearlWeb.SettingsLive do
        |> assign(settings: settings)
        |> push_event("show-modal", %{id: "reindex-modal"})}
     else
-      do_save(socket, settings)
+      {_status, socket} = do_save(socket, settings)
+      {:noreply, socket}
     end
   end
 
   @impl true
   def handle_event("save_and_reindex", _params, socket) do
     case do_save(socket, socket.assigns.settings) do
-      {:noreply, %{assigns: %{dirty: false}} = saved_socket} ->
+      {:ok, saved_socket} ->
         reindex_topic = socket.assigns.reindex_topic
 
         Task.Supervisor.async_nolink(
@@ -468,14 +469,15 @@ defmodule PearlWeb.SettingsLive do
         {:noreply,
          put_flash(saved_socket, :info, "Settings saved. Re-indexing started in background.")}
 
-      {:noreply, _socket} = error_result ->
-        error_result
+      {:error, socket} ->
+        {:noreply, socket}
     end
   end
 
   @impl true
   def handle_event("save_without_reindex", _params, socket) do
-    do_save(socket, socket.assigns.settings)
+    {_status, socket} = do_save(socket, socket.assigns.settings)
+    {:noreply, socket}
   end
 
   @impl true
@@ -499,17 +501,17 @@ defmodule PearlWeb.SettingsLive do
 
         case Enum.find(results, &match?({:error, _}, &1)) do
           nil ->
-            {:noreply,
+            {:ok,
              socket
              |> assign(settings: settings, initial_settings: settings, dirty: false)
              |> put_flash(:info, "Settings saved.")}
 
           {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Failed to save settings.")}
+            {:error, put_flash(socket, :error, "Failed to save settings.")}
         end
 
       {:error, message} ->
-        {:noreply, put_flash(socket, :error, message)}
+        {:error, put_flash(socket, :error, message)}
     end
   end
 
