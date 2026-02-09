@@ -1,0 +1,70 @@
+defmodule Pearl.Settings.SettingsTest do
+  use Pearl.DataCase
+
+  alias Pearl.Settings
+
+  @defaults %{
+    "chat_provider" => "openrouter",
+    "chat_model" => "openai/gpt-5.2",
+    "embedding_provider" => "openrouter",
+    "embedding_model" => "openai/text-embedding-3-small",
+    "openrouter_api_key_env" => "OPENROUTER_API_KEY",
+    "ollama_host_env" => "OLLAMA_HOST",
+    "embedding_batch_size" => "100",
+    "file_read_concurrency" => "10",
+    "wiki_page_timeout" => "300000",
+    "repos_path" => "~/.pearl/repos"
+  }
+
+  setup do
+    Settings.init()
+    :ok
+  end
+
+  describe "get/1" do
+    test "returns default when no DB row exists" do
+      assert Settings.get("chat_provider") == "openrouter"
+      assert Settings.get("chat_model") == "openai/gpt-5.2"
+      assert Settings.get("embedding_model") == "openai/text-embedding-3-small"
+    end
+
+    test "returns DB value when row exists" do
+      Settings.put("chat_model", "anthropic/claude-opus-4-6")
+      assert Settings.get("chat_model") == "anthropic/claude-opus-4-6"
+    end
+
+    test "returns nil for unknown key" do
+      assert Settings.get("nonexistent_key") == nil
+    end
+  end
+
+  describe "put/2" do
+    test "inserts a new setting" do
+      assert :ok = Settings.put("chat_provider", "ollama")
+      assert Settings.get("chat_provider") == "ollama"
+    end
+
+    test "updates an existing setting" do
+      Settings.put("chat_model", "model-a")
+      Settings.put("chat_model", "model-b")
+      assert Settings.get("chat_model") == "model-b"
+    end
+  end
+
+  describe "all/0" do
+    test "returns all settings merged with defaults" do
+      Settings.put("chat_provider", "ollama")
+      all = Settings.all()
+
+      assert all["chat_provider"] == "ollama"
+      assert all["chat_model"] == "openai/gpt-5.2"
+    end
+  end
+
+  describe "defaults/0" do
+    test "returns all default keys" do
+      defaults = Settings.defaults()
+      assert defaults == @defaults
+    end
+  end
+end
