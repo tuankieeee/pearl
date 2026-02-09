@@ -1,4 +1,8 @@
 defmodule Pearl.Settings.Setting do
+  @moduledoc """
+  Schema for application settings stored as key-value pairs.
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 

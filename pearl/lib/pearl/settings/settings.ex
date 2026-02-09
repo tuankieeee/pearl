@@ -26,9 +26,11 @@ defmodule Pearl.Settings do
   }
 
   @doc "Returns the defaults map."
+  @spec defaults() :: %{String.t() => String.t()}
   def defaults, do: @defaults
 
   @doc "Initialize ETS table and load settings from DB."
+  @spec init() :: :ok
   def init do
     if :ets.whereis(@table) == :undefined do
       :ets.new(@table, [:set, :public, :named_table])
@@ -40,6 +42,7 @@ defmodule Pearl.Settings do
   end
 
   @doc "Get a setting value. Checks ETS cache, then falls back to default."
+  @spec get(String.t()) :: String.t() | nil
   def get(key) do
     case :ets.lookup(@table, key) do
       [{^key, value}] -> value
@@ -48,19 +51,28 @@ defmodule Pearl.Settings do
   end
 
   @doc "Set a setting value. Writes to DB and updates ETS cache."
+  @spec put(String.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t()}
   def put(key, value) do
-    %Setting{}
-    |> Setting.changeset(%{key: key, value: value})
-    |> Repo.insert(
-      on_conflict: [set: [value: value, updated_at: DateTime.utc_now()]],
-      conflict_target: :key
-    )
+    result =
+      %Setting{}
+      |> Setting.changeset(%{key: key, value: value})
+      |> Repo.insert(
+        on_conflict: [set: [value: value, updated_at: DateTime.utc_now()]],
+        conflict_target: :key
+      )
 
-    :ets.insert(@table, {key, value})
-    :ok
+    case result do
+      {:ok, _setting} ->
+        :ets.insert(@table, {key, value})
+        :ok
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   @doc "Returns all settings merged with defaults (defaults first, DB overrides)."
+  @spec all() :: %{String.t() => String.t()}
   def all do
     db_settings = :ets.tab2list(@table) |> Map.new()
     Map.merge(@defaults, db_settings)

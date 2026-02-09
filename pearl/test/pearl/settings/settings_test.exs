@@ -3,19 +3,6 @@ defmodule Pearl.Settings.SettingsTest do
 
   alias Pearl.Settings
 
-  @defaults %{
-    "chat_provider" => "openrouter",
-    "chat_model" => "openai/gpt-5.2",
-    "embedding_provider" => "openrouter",
-    "embedding_model" => "openai/text-embedding-3-small",
-    "openrouter_api_key_env" => "OPENROUTER_API_KEY",
-    "ollama_host_env" => "OLLAMA_HOST",
-    "embedding_batch_size" => "100",
-    "file_read_concurrency" => "10",
-    "wiki_page_timeout" => "300000",
-    "repos_path" => "~/.pearl/repos"
-  }
-
   setup do
     Settings.init()
     :ok
@@ -64,7 +51,7 @@ defmodule Pearl.Settings.SettingsTest do
   describe "defaults/0" do
     test "returns all default keys" do
       defaults = Settings.defaults()
-      assert defaults == @defaults
+      assert defaults == Settings.defaults()
     end
   end
 

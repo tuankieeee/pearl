@@ -16,7 +16,6 @@ defmodule PearlWeb.SettingsLive do
        settings: settings,
        initial_settings: settings,
        dirty: false,
-       embedding_changed: false,
        openrouter_key_set: env_var_set?(settings["openrouter_api_key_env"]),
        ollama_host_set: env_var_set?(settings["ollama_host_env"]),
        resolved_path: Path.expand(settings["repos_path"]),
@@ -408,9 +407,6 @@ defmodule PearlWeb.SettingsLive do
      assign(socket,
        settings: settings,
        dirty: dirty,
-       embedding_changed:
-         settings["embedding_provider"] != socket.assigns.initial_settings["embedding_provider"] or
-           settings["embedding_model"] != socket.assigns.initial_settings["embedding_model"],
        openrouter_key_set: env_var_set?(settings["openrouter_api_key_env"]),
        ollama_host_set: env_var_set?(settings["ollama_host_env"]),
        resolved_path: Path.expand(settings["repos_path"]),
@@ -451,16 +447,54 @@ defmodule PearlWeb.SettingsLive do
   end
 
   defp do_save(socket, settings) do
-    Enum.each(settings, fn {key, value} ->
-      if Map.has_key?(Settings.defaults(), key) do
-        Settings.put(key, value)
+    case validate_numeric_settings(settings) do
+      :ok ->
+        Enum.each(settings, fn {key, value} ->
+          if Map.has_key?(Settings.defaults(), key) do
+            Settings.put(key, value)
+          end
+        end)
+
+        {:noreply,
+         socket
+         |> assign(initial_settings: settings, dirty: false)
+         |> put_flash(:info, "Settings saved.")}
+
+      {:error, message} ->
+        {:noreply, put_flash(socket, :error, message)}
+    end
+  end
+
+  @numeric_constraints %{
+    "embedding_batch_size" => {1, 500},
+    "file_read_concurrency" => {1, 100},
+    "wiki_page_timeout" => {10_000, 600_000}
+  }
+
+  defp validate_numeric_settings(settings) do
+    Enum.reduce_while(@numeric_constraints, :ok, fn {key, {min, max}}, :ok ->
+      case validate_integer(settings[key], min, max) do
+        :ok -> {:cont, :ok}
+        :error -> {:halt, {:error, "#{format_setting_name(key)} must be an integer between #{min} and #{max}"}}
       end
     end)
+  end
 
-    {:noreply,
-     socket
-     |> assign(initial_settings: settings, dirty: false, embedding_changed: false)
-     |> put_flash(:info, "Settings saved.")}
+  defp validate_integer(value, min, max) when is_binary(value) do
+    case Integer.parse(value) do
+      {int, ""} when int >= min and int <= max -> :ok
+      _ -> :error
+    end
+  end
+
+  defp validate_integer(_, _, _), do: :error
+
+  defp format_setting_name(key) do
+    key
+    |> String.replace("_", " ")
+    |> String.split()
+    |> Enum.map(&String.capitalize/1)
+    |> Enum.join(" ")
   end
 
   defp env_var_set?(env_var_name) when is_binary(env_var_name) do
