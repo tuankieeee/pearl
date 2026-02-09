@@ -18,13 +18,13 @@ defmodule Pearl.Wiki do
   @spec generate(RepoRecord.t(), (String.t() -> any())) ::
           {:ok, map()} | {:error, term()}
   def generate(repo, on_progress \\ fn _ -> :ok end) do
-    provider = Config.provider()
-    model = Config.model()
+    provider = Config.chat_provider()
+    model = Config.chat_model()
 
     case Generator.generate(repo, provider, model, on_progress) do
       {:ok, wiki_data} ->
         # Override model_used with Config-based format for consistency
-        wiki_data = Map.put(wiki_data, :model_used, "#{Config.provider()}/#{Config.model()}")
+        wiki_data = Map.put(wiki_data, :model_used, "#{Config.chat_provider()}/#{Config.chat_model()}")
         save_cache(repo, wiki_data)
         {:ok, wiki_data}
 

@@ -109,7 +109,7 @@ defmodule Pearl.Rag do
   defp embed_and_store_batch(repo_id, chunks) do
     texts = Enum.map(chunks, & &1.content)
 
-    case Providers.embed(Config.provider(), texts) do
+    case Providers.embed(Config.embedding_provider(), texts) do
       {:ok, vectors} ->
         entries =
           Enum.zip(chunks, vectors)
@@ -155,7 +155,7 @@ defmodule Pearl.Rag do
   def ask(%RepoRecord{} = repo, question, opts \\ []) do
     history = opts |> Keyword.get(:history, []) |> truncate_history()
 
-    with {:ok, [query_vector]} <- Providers.embed(Config.provider(), [question]) do
+    with {:ok, [query_vector]} <- Providers.embed(Config.embedding_provider(), [question]) do
       relevant_chunks = search(repo.id, query_vector, 5)
 
       context =
@@ -179,7 +179,7 @@ defmodule Pearl.Rag do
           }
         ] ++ history ++ [%{role: :user, content: question}]
 
-      Providers.chat(Config.provider(), Config.model(), messages, opts)
+      Providers.chat(Config.chat_provider(), Config.chat_model(), messages, opts)
     end
   end
 
