@@ -1,5 +1,5 @@
 defmodule Pearl.Settings.SettingsTest do
-  use Pearl.DataCase
+  use Pearl.DataCase, async: false
 
   alias Pearl.Settings
 

@@ -44,6 +44,19 @@ defmodule Pearl.Settings do
     "repos_path" => "~/.pearl/repos"
   }
 
+  @typedoc "Valid settings key"
+  @type setting_key ::
+          :chat_provider
+          | :chat_model
+          | :embedding_provider
+          | :embedding_model
+          | :openrouter_api_key_env
+          | :ollama_host_env
+          | :embedding_batch_size
+          | :file_read_concurrency
+          | :wiki_page_timeout
+          | :repos_path
+
   # --- Client API ---
 
   @doc "Starts the Settings GenServer."
@@ -119,7 +132,9 @@ defmodule Pearl.Settings do
   end
 
   @doc "Get a setting value. Checks ETS cache, then falls back to default."
-  @spec get(String.t()) :: String.t() | nil
+  @spec get(setting_key() | String.t()) :: String.t() | nil
+  def get(key) when is_atom(key), do: get(Atom.to_string(key))
+
   def get(key) do
     case :ets.lookup(@table, key) do
       [{^key, value}] -> value
@@ -128,13 +143,16 @@ defmodule Pearl.Settings do
   end
 
   @doc "Set a setting value. Writes to DB and updates ETS cache."
-  @spec put(String.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t()} | {:error, :unknown_key}
+  @spec put(setting_key() | String.t(), String.t()) ::
+          :ok | {:error, Ecto.Changeset.t()} | {:error, :unknown_key}
+  def put(key, value) when is_atom(key), do: put(Atom.to_string(key), value)
+
   def put(key, value) do
     GenServer.call(__MODULE__, {:put, key, value})
   end
 
   defp do_put(key, value) do
-    if not valid_key?(key) do
+    unless valid_key?(key) do
       {:error, :unknown_key}
     else
       now = DateTime.utc_now()

@@ -5,8 +5,8 @@ defmodule PearlWeb.SettingsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # Generate unique topic for this session to avoid stale messages from previous sessions
-    reindex_topic = "settings:reindex:#{System.unique_integer([:positive])}"
+    # Use socket ID for unique topic - stable for session and easier to debug
+    reindex_topic = "settings:reindex:#{socket.id}"
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Pearl.PubSub, reindex_topic)
@@ -460,7 +460,7 @@ defmodule PearlWeb.SettingsLive do
       {:noreply, %{assigns: %{dirty: false}} = saved_socket} ->
         reindex_topic = socket.assigns.reindex_topic
 
-        Task.Supervisor.start_child(
+        Task.Supervisor.async_nolink(
           Pearl.TaskSupervisor,
           fn -> __MODULE__.reindex_repos_task(reindex_topic) end
         )
