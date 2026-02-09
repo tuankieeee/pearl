@@ -75,4 +75,27 @@ defmodule PearlWeb.SettingsLiveTest do
       assert html =~ ~r|<span[^>]*>/</span>\s*<span[^>]*>Settings</span>|
     end
   end
+
+  describe "saving settings" do
+    test "saves settings and shows flash", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/settings")
+
+      html =
+        view
+        |> form("form[phx-submit=save]", settings: %{chat_model: "test/model-123"})
+        |> render_submit()
+
+      assert html =~ "Settings saved"
+    end
+
+    test "persists settings to database", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/settings")
+
+      view
+      |> form("form[phx-submit=save]", settings: %{chat_model: "test/model-456"})
+      |> render_submit()
+
+      assert Settings.get("chat_model") == "test/model-456"
+    end
+  end
 end
