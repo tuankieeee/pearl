@@ -41,7 +41,7 @@ defmodule PearlWeb.SettingsLive do
           </p>
         </div>
 
-        <.form for={to_form(%{}, as: :settings)} phx-change="validate" phx-submit="save">
+        <.form for={to_form(@settings, as: :settings)} phx-change="validate" phx-submit="save">
           <%!-- Card 1: LLM Providers --%>
           <div class="card bg-base-100 shadow-md animate-fade-up" style="animation-delay: 75ms">
             <div class="card-body">
@@ -512,21 +512,26 @@ defmodule PearlWeb.SettingsLive do
         :ok ->
           {:cont, :ok}
 
-        :error ->
+        {:error, :empty} ->
+          {:halt, {:error, "#{format_setting_name(key)} is required"}}
+
+        {:error, :invalid} ->
           {:halt,
            {:error, "#{format_setting_name(key)} must be an integer between #{min} and #{max}"}}
       end
     end)
   end
 
+  defp validate_integer("", _min, _max), do: {:error, :empty}
+
   defp validate_integer(value, min, max) when is_binary(value) do
     case Integer.parse(value) do
       {int, ""} when int >= min and int <= max -> :ok
-      _ -> :error
+      _ -> {:error, :invalid}
     end
   end
 
-  defp validate_integer(_, _, _), do: :error
+  defp validate_integer(_, _, _), do: {:error, :invalid}
 
   defp format_setting_name(key) do
     key

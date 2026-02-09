@@ -10,7 +10,7 @@ defmodule Pearl.Application do
     children = [
       PearlWeb.Telemetry,
       Pearl.Repo,
-      {Task, &Pearl.Settings.init/0},
+      Pearl.Settings,
       {DNSCluster, query: Application.get_env(:pearl, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Pearl.PubSub},
       # Start a worker by calling: Pearl.Worker.start_link(arg)

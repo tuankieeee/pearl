@@ -21,6 +21,8 @@ defmodule Pearl.Settings do
   | `repos_path` | `"~/.pearl/repos"` | Directory path for cloned repositories |
   """
 
+  use GenServer
+
   import Ecto.Query
   alias Pearl.Repo
   alias Pearl.Settings.Setting
@@ -40,19 +42,64 @@ defmodule Pearl.Settings do
     "repos_path" => "~/.pearl/repos"
   }
 
+  # --- Client API ---
+
+  @doc "Starts the Settings GenServer."
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
+
   @doc "Returns the defaults map."
   @spec defaults() :: %{String.t() => String.t()}
   def defaults, do: @defaults
 
   @doc "Initialize ETS table and load settings from DB."
-  @spec init() :: :ok
+  @deprecated "Use start_link/1 instead - Settings is now a GenServer"
+  @spec init() :: :ok | {:error, term()}
   def init do
+    # For backwards compatibility during tests
+    do_init_table()
+    load_from_db()
+  end
+
+  # --- GenServer Callbacks ---
+
+  @impl true
+  def init([]) do
+    do_init_table()
+    {:ok, %{}, {:continue, :load_from_db}}
+  end
+
+  @impl true
+  def handle_continue(:load_from_db, state) do
+    case load_from_db() do
+      :ok ->
+        {:noreply, state}
+
+      {:error, reason} ->
+        # Retry after 1 second if DB isn't ready
+        Process.send_after(self(), :retry_load, 1_000)
+        {:noreply, Map.put(state, :load_error, reason)}
+    end
+  end
+
+  @impl true
+  def handle_info(:retry_load, state) do
+    case load_from_db() do
+      :ok ->
+        {:noreply, Map.delete(state, :load_error)}
+
+      {:error, _reason} ->
+        Process.send_after(self(), :retry_load, 1_000)
+        {:noreply, state}
+    end
+  end
+
+  defp do_init_table do
     case :ets.whereis(@table) do
       :undefined -> :ets.new(@table, [:set, :public, :named_table])
       _tid -> :ets.delete_all_objects(@table)
     end
-
-    load_from_db()
   end
 
   @doc "Get a setting value. Checks ETS cache, then falls back to default."
@@ -97,13 +144,19 @@ defmodule Pearl.Settings do
   end
 
   defp load_from_db do
-    Setting
-    |> select([s], {s.key, s.value})
-    |> Repo.all()
-    |> Enum.each(fn {key, value} ->
-      :ets.insert(@table, {key, value})
-    end)
+    try do
+      Setting
+      |> select([s], {s.key, s.value})
+      |> Repo.all()
+      |> Enum.each(fn {key, value} ->
+        :ets.insert(@table, {key, value})
+      end)
 
-    :ok
+      :ok
+    rescue
+      e -> {:error, e}
+    catch
+      :exit, reason -> {:error, reason}
+    end
   end
 end

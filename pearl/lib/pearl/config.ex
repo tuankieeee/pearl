@@ -6,6 +6,8 @@ defmodule Pearl.Config do
   Provides typed accessors for all configuration values.
   """
 
+  require Logger
+
   alias Pearl.Settings
 
   # --- Chat / Generation ---
@@ -47,8 +49,12 @@ defmodule Pearl.Config do
   @spec safe_integer(String.t() | nil, pos_integer()) :: pos_integer()
   defp safe_integer(value, default) when is_binary(value) do
     case Integer.parse(value) do
-      {int, ""} when int > 0 -> int
-      _ -> default
+      {int, ""} when int > 0 ->
+        int
+
+      _other ->
+        Logger.debug("Failed to parse integer from #{inspect(value)}, using default #{default}")
+        default
     end
   end
 
