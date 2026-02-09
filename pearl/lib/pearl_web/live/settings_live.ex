@@ -86,6 +86,7 @@ defmodule PearlWeb.SettingsLive do
                       value={@settings["chat_model"]}
                       placeholder="e.g. openai/gpt-5.2"
                       class="input input-bordered input-sm w-full font-mono text-xs"
+                      phx-debounce="500"
                     />
                   </div>
                 </fieldset>
@@ -128,6 +129,7 @@ defmodule PearlWeb.SettingsLive do
                       value={@settings["embedding_model"]}
                       placeholder="e.g. openai/text-embedding-3-small"
                       class="input input-bordered input-sm w-full font-mono text-xs"
+                      phx-debounce="500"
                     />
                   </div>
                 </fieldset>
@@ -156,6 +158,7 @@ defmodule PearlWeb.SettingsLive do
                         id="openrouter_api_key_env"
                         value={@settings["openrouter_api_key_env"]}
                         class="input input-bordered input-sm w-full font-mono text-xs"
+                        phx-debounce="500"
                       />
                     </div>
                     <div class="pb-1">
@@ -185,6 +188,7 @@ defmodule PearlWeb.SettingsLive do
                         id="ollama_host_env"
                         value={@settings["ollama_host_env"]}
                         class="input input-bordered input-sm w-full font-mono text-xs"
+                        phx-debounce="500"
                       />
                     </div>
                     <div class="pb-1">
@@ -437,30 +441,10 @@ defmodule PearlWeb.SettingsLive do
 
     Phoenix.PubSub.subscribe(Pearl.PubSub, "settings:reindex")
 
-    Task.Supervisor.start_child(Pearl.TaskSupervisor, fn ->
-      repos =
-        Pearl.Repositories.list_repos()
-        |> Enum.filter(&(&1.status == "ready"))
-
-      results =
-        Enum.map(repos, fn repo ->
-          try do
-            Pearl.Rag.index_repo(repo)
-            {:ok, repo.name}
-          rescue
-            e -> {:error, repo.name, Exception.message(e)}
-          end
-        end)
-
-      errors = Enum.filter(results, &match?({:error, _, _}, &1))
-
-      if errors == [] do
-        Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", :reindex_complete)
-      else
-        error_msgs = Enum.map(errors, fn {:error, name, msg} -> "#{name}: #{msg}" end)
-        Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", {:reindex_failed, error_msgs})
-      end
-    end)
+    Task.Supervisor.start_child(
+      Pearl.TaskSupervisor,
+      {__MODULE__, :reindex_repos_task, []}
+    )
 
     {:noreply,
      put_flash(saved_socket, :info, "Settings saved. Re-indexing started in background.")}
@@ -485,16 +469,21 @@ defmodule PearlWeb.SettingsLive do
   defp do_save(socket, settings) do
     case validate_numeric_settings(settings) do
       :ok ->
-        Enum.each(settings, fn {key, value} ->
-          if Map.has_key?(Settings.defaults(), key) do
-            Settings.put(key, value)
-          end
-        end)
+        results =
+          settings
+          |> Enum.filter(fn {key, _value} -> Map.has_key?(Settings.defaults(), key) end)
+          |> Enum.map(fn {key, value} -> Settings.put(key, value) end)
 
-        {:noreply,
-         socket
-         |> assign(initial_settings: settings, dirty: false)
-         |> put_flash(:info, "Settings saved.")}
+        case Enum.find(results, &match?({:error, _}, &1)) do
+          nil ->
+            {:noreply,
+             socket
+             |> assign(initial_settings: settings, dirty: false)
+             |> put_flash(:info, "Settings saved.")}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to save settings.")}
+        end
 
       {:error, message} ->
         {:noreply, put_flash(socket, :error, message)}
@@ -546,5 +535,31 @@ defmodule PearlWeb.SettingsLive do
   defp embedding_config_changed?(current, initial) do
     current["embedding_provider"] != initial["embedding_provider"] or
       current["embedding_model"] != initial["embedding_model"]
+  end
+
+  # Task entry point for Task.Supervisor.start_child - re-indexes all ready repos
+  def reindex_repos_task do
+    repos =
+      Pearl.Repositories.list_repos()
+      |> Enum.filter(&(&1.status == "ready"))
+
+    results =
+      Enum.map(repos, fn repo ->
+        try do
+          Pearl.Rag.index_repo(repo)
+          {:ok, repo.name}
+        rescue
+          e -> {:error, repo.name, Exception.message(e)}
+        end
+      end)
+
+    errors = Enum.filter(results, &match?({:error, _, _}, &1))
+
+    if errors == [] do
+      Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", :reindex_complete)
+    else
+      error_msgs = Enum.map(errors, fn {:error, name, msg} -> "#{name}: #{msg}" end)
+      Phoenix.PubSub.broadcast(Pearl.PubSub, "settings:reindex", {:reindex_failed, error_msgs})
+    end
   end
 end

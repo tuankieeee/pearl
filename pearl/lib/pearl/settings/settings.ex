@@ -4,6 +4,21 @@ defmodule Pearl.Settings do
 
   Settings are stored in the database and cached in ETS for fast reads.
   The lookup chain: ETS cache (from DB) → hardcoded default.
+
+  ## Available Settings Keys
+
+  | Key | Default | Description |
+  |-----|---------|-------------|
+  | `chat_provider` | `"openrouter"` | LLM provider for chat (`"openrouter"` or `"ollama"`) |
+  | `chat_model` | `"openai/gpt-5.2"` | Model identifier for chat completions |
+  | `embedding_provider` | `"openrouter"` | Provider for embeddings (`"openrouter"` or `"ollama"`) |
+  | `embedding_model` | `"openai/text-embedding-3-small"` | Model for generating embeddings |
+  | `openrouter_api_key_env` | `"OPENROUTER_API_KEY"` | Environment variable name for OpenRouter API key |
+  | `ollama_host_env` | `"OLLAMA_HOST"` | Environment variable name for Ollama host URL |
+  | `embedding_batch_size` | `"100"` | Number of chunks to embed per batch |
+  | `file_read_concurrency` | `"10"` | Concurrent file reads during indexing |
+  | `wiki_page_timeout` | `"300000"` | Timeout in ms for wiki page generation |
+  | `repos_path` | `"~/.pearl/repos"` | Directory path for cloned repositories |
   """
 
   import Ecto.Query

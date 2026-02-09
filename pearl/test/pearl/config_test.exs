@@ -63,11 +63,10 @@ defmodule Pearl.ConfigTest do
 
   describe "ollama_host/0" do
     test "reads from env var named in settings" do
+      on_exit(fn -> System.delete_env("MY_OLLAMA_HOST") end)
       System.put_env("MY_OLLAMA_HOST", "http://custom:11434")
       Settings.put("ollama_host_env", "MY_OLLAMA_HOST")
       assert Config.ollama_host() == "http://custom:11434"
-    after
-      System.delete_env("MY_OLLAMA_HOST")
     end
 
     test "returns default when env var not set" do

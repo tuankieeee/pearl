@@ -283,7 +283,7 @@ defmodule Pearl.Repositories do
          {false, _} <- {info.type == :symlink, :symlink_rejected} do
       File.read(full_path)
     else
-      {bool, reason} when is_boolean(bool) -> {:error, reason}
+      {bool, reason} when is_boolean(bool) and is_atom(reason) -> {:error, reason}
       {:error, reason} -> {:error, reason}
     end
   end
