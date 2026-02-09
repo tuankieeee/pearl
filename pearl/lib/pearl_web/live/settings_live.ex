@@ -456,16 +456,21 @@ defmodule PearlWeb.SettingsLive do
 
   @impl true
   def handle_event("save_and_reindex", _params, socket) do
-    {:noreply, saved_socket} = do_save(socket, socket.assigns.settings)
-    reindex_topic = socket.assigns.reindex_topic
+    case do_save(socket, socket.assigns.settings) do
+      {:noreply, %{assigns: %{dirty: false}} = saved_socket} ->
+        reindex_topic = socket.assigns.reindex_topic
 
-    Task.Supervisor.start_child(
-      Pearl.TaskSupervisor,
-      fn -> __MODULE__.reindex_repos_task(reindex_topic) end
-    )
+        Task.Supervisor.start_child(
+          Pearl.TaskSupervisor,
+          fn -> __MODULE__.reindex_repos_task(reindex_topic) end
+        )
 
-    {:noreply,
-     put_flash(saved_socket, :info, "Settings saved. Re-indexing started in background.")}
+        {:noreply,
+         put_flash(saved_socket, :info, "Settings saved. Re-indexing started in background.")}
+
+      {:noreply, _socket} = error_result ->
+        error_result
+    end
   end
 
   @impl true
@@ -576,13 +581,6 @@ defmodule PearlWeb.SettingsLive do
           Pearl.PubSub,
           topic,
           {:reindex_failed, ["#{name}: #{msg}"]}
-        )
-
-      {:error, reason} ->
-        Phoenix.PubSub.broadcast(
-          Pearl.PubSub,
-          topic,
-          {:reindex_failed, ["Transaction failed: #{inspect(reason)}"]}
         )
     end
   end

@@ -61,13 +61,6 @@ defmodule Pearl.Settings do
     GenServer.call(__MODULE__, :reset)
   end
 
-  @doc "Initialize ETS table and load settings from DB."
-  @deprecated "Use reset/0 instead"
-  @spec initialize() :: :ok | {:error, term()}
-  def initialize do
-    reset()
-  end
-
   # --- GenServer Callbacks ---
 
   @impl true
@@ -93,6 +86,11 @@ defmodule Pearl.Settings do
   def handle_call(:reset, _from, state) do
     do_init_table()
     result = load_from_db()
+    {:reply, result, state}
+  end
+
+  def handle_call({:put, key, value}, _from, state) do
+    result = do_put(key, value)
     {:reply, result, state}
   end
 
@@ -127,6 +125,10 @@ defmodule Pearl.Settings do
   @doc "Set a setting value. Writes to DB and updates ETS cache."
   @spec put(String.t(), String.t()) :: :ok | {:error, Ecto.Changeset.t()} | {:error, :unknown_key}
   def put(key, value) do
+    GenServer.call(__MODULE__, {:put, key, value})
+  end
+
+  defp do_put(key, value) do
     if not Map.has_key?(@defaults, key) do
       {:error, :unknown_key}
     else
