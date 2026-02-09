@@ -53,11 +53,16 @@ defmodule Pearl.Settings do
   @spec defaults() :: %{String.t() => String.t()}
   def defaults, do: @defaults
 
+  @doc "Reset ETS cache and reload settings from DB. Useful in tests for clean state."
+  @spec reset() :: :ok | {:error, term()}
+  def reset do
+    GenServer.call(__MODULE__, :reset)
+  end
+
   @doc "Initialize ETS table and load settings from DB."
-  @deprecated "Use start_link/1 instead - Settings is now a GenServer"
+  @deprecated "Use reset/0 for tests, or start_link/1 for application startup"
   @spec init() :: :ok | {:error, term()}
   def init do
-    # For backwards compatibility during tests
     do_init_table()
     load_from_db()
   end
@@ -81,6 +86,13 @@ defmodule Pearl.Settings do
         Process.send_after(self(), :retry_load, 1_000)
         {:noreply, Map.put(state, :load_error, reason)}
     end
+  end
+
+  @impl true
+  def handle_call(:reset, _from, state) do
+    do_init_table()
+    result = load_from_db()
+    {:reply, result, state}
   end
 
   @impl true

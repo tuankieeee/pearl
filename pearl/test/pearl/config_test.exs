@@ -5,7 +5,7 @@ defmodule Pearl.ConfigTest do
   alias Pearl.Settings
 
   setup do
-    Settings.init()
+    Settings.reset()
     :ok
   end
 

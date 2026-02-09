@@ -6,7 +6,7 @@ defmodule PearlWeb.SettingsLiveTest do
   alias Pearl.Settings
 
   setup do
-    Settings.init()
+    Settings.reset()
     :ok
   end
 
