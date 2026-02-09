@@ -60,22 +60,6 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Provider configuration
-config :pearl, :providers,
-  openrouter: [
-    api_key: nil,
-    default_model: "openai/gpt-4o-mini",
-    embedding_model: "openai/text-embedding-3-small"
-  ],
-  ollama: [
-    host: "http://localhost:11434",
-    default_model: "llama3.2:3b",
-    embedding_model: "rjmalagon/gte-qwen2-1.5b-instruct-embed-f16"
-  ]
-
-# Storage configuration
-config :pearl, :storage, repos_path: "~/.pearl/repos"
-
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
