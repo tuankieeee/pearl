@@ -42,7 +42,6 @@ defmodule Pearl.Config do
   @spec embedding_provider() :: :ollama | :openrouter
   def embedding_provider, do: parse_provider(Settings.get("embedding_provider"))
 
-  @spec parse_provider(String.t() | nil) :: :ollama | :openrouter
   defp parse_provider("ollama"), do: :ollama
   defp parse_provider("openrouter"), do: :openrouter
   defp parse_provider(nil), do: :openrouter

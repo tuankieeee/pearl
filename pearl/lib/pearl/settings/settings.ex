@@ -60,6 +60,7 @@ defmodule Pearl.Settings do
   # --- Client API ---
 
   @doc "Starts the Settings GenServer."
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(_opts) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
@@ -73,7 +74,7 @@ defmodule Pearl.Settings do
   def valid_key?(key), do: Map.has_key?(@defaults, key)
 
   @doc "Reset ETS cache and reload settings from DB. Useful in tests for clean state."
-  @spec reset() :: :ok | {:error, term()}
+  @spec reset() :: :ok | {:error, Exception.t() | term()}
   def reset do
     GenServer.call(__MODULE__, :reset)
   end
