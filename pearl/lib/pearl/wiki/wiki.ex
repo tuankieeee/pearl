@@ -25,7 +25,7 @@ defmodule Pearl.Wiki do
       {:ok, wiki_data} ->
         # Override model_used with Config-based format for consistency
         wiki_data =
-          Map.put(wiki_data, :model_used, "#{Config.chat_provider()}/#{Config.chat_model()}")
+          Map.put(wiki_data, :model_used, "#{provider}/#{model}")
 
         save_cache(repo, wiki_data)
         {:ok, wiki_data}
