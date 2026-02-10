@@ -166,7 +166,7 @@ defmodule Pearl.Settings do
   end
 
   defp do_put(key, value) do
-    now = NaiveDateTime.utc_now()
+    now = DateTime.utc_now()
 
     result =
       %Setting{}

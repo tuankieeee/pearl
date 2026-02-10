@@ -508,22 +508,8 @@ defmodule PearlWeb.SettingsLive do
     {:noreply, put_flash(socket, :error, error_msg)}
   end
 
-  # Handle Task.Supervisor.async_nolink completion - task completed normally
-  @impl true
-  def handle_info({ref, _result}, socket) when is_reference(ref) do
-    # Demonitor and flush to avoid receiving :DOWN message
-    Process.demonitor(ref, [:flush])
-    {:noreply, socket}
-  end
-
-  # Handle Task.Supervisor.async_nolink crash - task crashed before PubSub broadcast
-  @impl true
-  def handle_info({:DOWN, _ref, :process, _pid, reason}, socket) do
-    error_msg = "Re-indexing task crashed: #{inspect(reason)}"
-    {:noreply, put_flash(socket, :error, error_msg)}
-  end
-
-  # Catch-all for unexpected messages
+  # Catch-all for unexpected messages (e.g., PubSub noise).
+  # Note: start_child tasks are unlinked so no :DOWN messages are received here.
   @impl true
   def handle_info(_msg, socket) do
     {:noreply, socket}
