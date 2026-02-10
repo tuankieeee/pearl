@@ -5,8 +5,8 @@ defmodule PearlWeb.SettingsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # Use socket ID for unique topic - stable for session and easier to debug
-    reindex_topic = "settings:reindex:#{socket.id}"
+    # Use a stable UUID for the topic - socket.id changes on reconnect
+    reindex_topic = "settings:reindex:#{Ecto.UUID.generate()}"
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Pearl.PubSub, reindex_topic)
@@ -638,7 +638,7 @@ defmodule PearlWeb.SettingsLive do
   defp reindex_repos_sequentially(repos) do
     errors =
       Enum.reduce(repos, [], fn repo, errors ->
-        task = Task.async(fn -> Pearl.Rag.index_repo(repo) end)
+        task = Task.Supervisor.async_nolink(Pearl.TaskSupervisor, fn -> Pearl.Rag.index_repo(repo) end)
 
         try do
           case Task.yield(task, @reindex_timeout_ms) || Task.shutdown(task) do

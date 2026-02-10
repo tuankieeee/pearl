@@ -141,7 +141,12 @@ defmodule Pearl.Settings do
     end
   end
 
-  @doc "Get a setting value. Checks ETS cache, then falls back to default."
+  @doc """
+  Get a setting value. Checks ETS cache, then falls back to default.
+
+  Reads directly from ETS without GenServer serialization because ETS reads
+  are atomic and thread-safe - no coordination needed for concurrent lookups.
+  """
   @spec get(setting_key()) :: String.t() | nil
   def get(key) when is_atom(key), do: get(Atom.to_string(key))
 

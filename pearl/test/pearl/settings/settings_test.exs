@@ -64,4 +64,21 @@ defmodule Pearl.Settings.SettingsTest do
       assert defaults["repos_path"] == "~/.pearl/repos"
     end
   end
+
+  describe "GenServer restart" do
+    test "settings survive GenServer restart" do
+      # Store a custom value
+      Settings.put("chat_model", "test-model-for-restart")
+      assert Settings.get("chat_model") == "test-model-for-restart"
+
+      # Stop the GenServer
+      GenServer.stop(Settings)
+
+      # Wait for supervisor to restart it
+      Process.sleep(100)
+
+      # Settings should still be available after restart
+      assert Settings.get("chat_model") == "test-model-for-restart"
+    end
+  end
 end
