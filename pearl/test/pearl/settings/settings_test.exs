@@ -63,5 +63,4 @@ defmodule Pearl.Settings.SettingsTest do
       assert defaults["repos_path"] == "~/.pearl/repos"
     end
   end
-
 end

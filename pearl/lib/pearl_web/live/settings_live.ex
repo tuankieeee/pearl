@@ -517,13 +517,18 @@ defmodule PearlWeb.SettingsLive do
   defp do_save(socket, settings) do
     case validate_numeric_settings(settings) do
       :ok ->
-        results =
+        result =
           settings
           |> Enum.filter(fn {key, _value} -> Settings.valid_key?(key) end)
-          |> Enum.map(fn {key, value} -> Settings.put(key, value) end)
+          |> Enum.reduce_while(:ok, fn {key, value}, :ok ->
+            case Settings.put(key, value) do
+              :ok -> {:cont, :ok}
+              {:error, _} = error -> {:halt, error}
+            end
+          end)
 
-        case Enum.find(results, &match?({:error, _}, &1)) do
-          nil ->
+        case result do
+          :ok ->
             {:ok,
              socket
              |> assign(settings: settings, initial_settings: settings, dirty: false)

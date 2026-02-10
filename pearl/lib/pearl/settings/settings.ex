@@ -191,12 +191,12 @@ defmodule Pearl.Settings do
 
   defp load_from_db do
     try do
-      Setting
-      |> select([s], {s.key, s.value})
-      |> Repo.all()
-      |> Enum.each(fn {key, value} ->
-        :ets.insert(@table, {key, value})
-      end)
+      settings =
+        Setting
+        |> select([s], {s.key, s.value})
+        |> Repo.all()
+
+      :ets.insert(@table, settings)
 
       :ok
     rescue
