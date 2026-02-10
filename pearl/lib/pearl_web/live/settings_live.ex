@@ -429,12 +429,27 @@ defmodule PearlWeb.SettingsLive do
         {expanded, File.dir?(expanded)}
       end
 
+    # Only check env vars if the field actually changed
+    openrouter_key_set =
+      if settings["openrouter_api_key_env"] == socket.assigns.settings["openrouter_api_key_env"] do
+        socket.assigns.openrouter_key_set
+      else
+        env_var_set?(settings["openrouter_api_key_env"])
+      end
+
+    ollama_host_set =
+      if settings["ollama_host_env"] == socket.assigns.settings["ollama_host_env"] do
+        socket.assigns.ollama_host_set
+      else
+        env_var_set?(settings["ollama_host_env"])
+      end
+
     {:noreply,
      assign(socket,
        settings: settings,
        dirty: dirty,
-       openrouter_key_set: env_var_set?(settings["openrouter_api_key_env"]),
-       ollama_host_set: env_var_set?(settings["ollama_host_env"]),
+       openrouter_key_set: openrouter_key_set,
+       ollama_host_set: ollama_host_set,
        resolved_path: resolved_path,
        path_exists: path_exists
      )}
@@ -514,70 +529,78 @@ defmodule PearlWeb.SettingsLive do
     {:noreply, socket}
   end
 
+  @numeric_fields %{
+    embedding_batch_size: {1, 500},
+    file_read_concurrency: {1, 100},
+    wiki_page_timeout: {10_000, 600_000}
+  }
+
+  @numeric_types Map.new(@numeric_fields, fn {k, _} -> {k, :integer} end)
+
   defp do_save(socket, settings) do
-    case validate_numeric_settings(settings) do
-      :ok ->
-        result =
-          settings
-          |> Enum.filter(fn {key, _value} -> Settings.valid_key?(key) end)
-          |> Enum.reduce_while(:ok, fn {key, value}, :ok ->
-            case Settings.put(key, value) do
-              :ok -> {:cont, :ok}
-              {:error, _} = error -> {:halt, error}
-            end
-          end)
+    changeset = validate_settings(settings)
 
-        case result do
-          :ok ->
-            {:ok,
-             socket
-             |> assign(settings: settings, initial_settings: settings, dirty: false)
-             |> put_flash(:info, "Settings saved.")}
+    if changeset.valid? do
+      result =
+        settings
+        |> Enum.filter(fn {key, _value} -> Settings.valid_key?(key) end)
+        |> Enum.reduce_while(:ok, fn {key, value}, :ok ->
+          case Settings.put(key, value) do
+            :ok -> {:cont, :ok}
+            {:error, _} = error -> {:halt, error}
+          end
+        end)
 
-          {:error, _changeset} ->
-            {:error, put_flash(socket, :error, "Failed to save settings.")}
-        end
+      case result do
+        :ok ->
+          {:ok,
+           socket
+           |> assign(settings: settings, initial_settings: settings, dirty: false)
+           |> put_flash(:info, "Settings saved.")}
 
-      {:error, message} ->
-        {:error, put_flash(socket, :error, message)}
+        {:error, _changeset} ->
+          {:error, put_flash(socket, :error, "Failed to save settings.")}
+      end
+    else
+      message = format_changeset_errors(changeset)
+      {:error, put_flash(socket, :error, message)}
     end
   end
 
-  @numeric_constraints %{
-    "embedding_batch_size" => {1, 500},
-    "file_read_concurrency" => {1, 100},
-    "wiki_page_timeout" => {10_000, 600_000}
-  }
-
-  defp validate_numeric_settings(settings) do
-    Enum.reduce_while(@numeric_constraints, :ok, fn {key, {min, max}}, :ok ->
-      case validate_integer(settings[key], min, max) do
-        :ok ->
-          {:cont, :ok}
-
-        {:error, :empty} ->
-          {:halt, {:error, "#{format_setting_name(key)} is required"}}
-
-        {:error, :invalid} ->
-          {:halt,
-           {:error, "#{format_setting_name(key)} must be an integer between #{min} and #{max}"}}
+  defp validate_settings(settings) do
+    # Only convert keys we're validating - they're defined as atoms in @numeric_fields
+    data =
+      for {field, _} <- @numeric_fields, into: %{} do
+        {field, settings[to_string(field)]}
       end
+
+    {%{}, @numeric_types}
+    |> Ecto.Changeset.cast(data, Map.keys(@numeric_types))
+    |> then(fn changeset ->
+      Enum.reduce(@numeric_fields, changeset, fn {field, {min, max}}, cs ->
+        msg = "must be an integer between #{min} and #{max}"
+
+        cs
+        |> Ecto.Changeset.validate_required([field], message: msg)
+        |> Ecto.Changeset.validate_number(field,
+          greater_than_or_equal_to: min,
+          less_than_or_equal_to: max,
+          message: msg
+        )
+      end)
     end)
   end
 
-  defp validate_integer("", _min, _max), do: {:error, :empty}
-
-  defp validate_integer(value, min, max) when is_binary(value) do
-    case Integer.parse(value) do
-      {int, ""} when int >= min and int <= max -> :ok
-      _ -> {:error, :invalid}
-    end
+  defp format_changeset_errors(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+    |> Enum.map_join("; ", fn {field, errors} ->
+      "#{format_field_name(field)} #{Enum.join(errors, ", ")}"
+    end)
   end
 
-  defp validate_integer(_, _, _), do: {:error, :invalid}
-
-  defp format_setting_name(key) do
-    key
+  defp format_field_name(field) do
+    field
+    |> to_string()
     |> String.replace("_", " ")
     |> String.split()
     |> Enum.map(&String.capitalize/1)
@@ -616,6 +639,8 @@ defmodule PearlWeb.SettingsLive do
           {:reindex_failed, error_messages}
         )
     end
+
+    :ok
   end
 
   # Process repos sequentially without transaction - LLM API calls should not hold DB locks

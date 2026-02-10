@@ -44,7 +44,7 @@ defmodule Pearl.Settings do
     "repos_path" => "~/.pearl/repos"
   }
 
-  @typedoc "Valid settings key"
+  @typedoc "Valid settings key (atom or string form)"
   @type setting_key ::
           :chat_provider
           | :chat_model
@@ -56,6 +56,7 @@ defmodule Pearl.Settings do
           | :file_read_concurrency
           | :wiki_page_timeout
           | :repos_path
+          | String.t()
 
   # --- Client API ---
 
@@ -138,7 +139,7 @@ defmodule Pearl.Settings do
   end
 
   @doc "Get a setting value. Checks ETS cache, then falls back to default."
-  @spec get(setting_key() | String.t()) :: String.t() | nil
+  @spec get(setting_key()) :: String.t() | nil
   def get(key) when is_atom(key), do: get(Atom.to_string(key))
 
   def get(key) do
@@ -149,7 +150,7 @@ defmodule Pearl.Settings do
   end
 
   @doc "Set a setting value. Writes to DB and updates ETS cache."
-  @spec put(setting_key() | String.t(), String.t()) ::
+  @spec put(setting_key(), String.t()) ::
           :ok | {:error, Ecto.Changeset.t()} | {:error, :unknown_key}
   def put(key, value) when is_atom(key), do: put(Atom.to_string(key), value)
 
