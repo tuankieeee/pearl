@@ -172,8 +172,8 @@ defmodule PearlWeb.SettingsLive do
                   These fields configure which variable names to look up — do not paste secrets here.
                 </p>
 
-                <div class="alert alert-info alert-sm mb-4 text-xs">
-                  <.icon name="hero-information-circle" class="size-4" />
+                <div class="rounded-lg border border-base-content/10 bg-base-200/50 px-4 py-2.5 mb-4 text-xs text-base-content/50 flex items-start gap-2">
+                  <.icon name="hero-information-circle" class="size-4 shrink-0 mt-0.5" />
                   <span>
                     Set credentials in your shell profile, e.g.
                     <code class="font-mono bg-base-content/10 px-1 rounded">
