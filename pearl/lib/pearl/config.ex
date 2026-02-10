@@ -63,10 +63,7 @@ defmodule Pearl.Config do
     end
   end
 
-  defp safe_integer(nil, default) do
-    Logger.debug("No value configured, using default #{default}")
-    default
-  end
+  defp safe_integer(nil, default), do: default
 
   @doc """
   Returns the model identifier for embedding generation.

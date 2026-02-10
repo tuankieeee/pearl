@@ -461,6 +461,8 @@ defmodule PearlWeb.SettingsLive do
       {:ok, saved_socket} ->
         reindex_topic = socket.assigns.reindex_topic
 
+        # Intentionally unlinked: task failure shouldn't crash the LiveView process.
+        # The task runs in the background and reports progress via PubSub to reindex_topic.
         Task.Supervisor.async_nolink(
           Pearl.TaskSupervisor,
           fn -> __MODULE__.reindex_repos_task(reindex_topic) end
@@ -590,6 +592,7 @@ defmodule PearlWeb.SettingsLive do
 
   # Task entry point for Task.Supervisor.start_child - re-indexes all ready repos
   @doc false
+  @spec reindex_repos_task(String.t()) :: :ok
   def reindex_repos_task(topic) do
     repos =
       Pearl.Repositories.list_repos()

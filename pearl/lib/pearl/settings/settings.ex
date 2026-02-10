@@ -73,7 +73,12 @@ defmodule Pearl.Settings do
   @spec valid_key?(String.t()) :: boolean()
   def valid_key?(key), do: Map.has_key?(@defaults, key)
 
-  @doc "Reset ETS cache and reload settings from DB. Useful in tests for clean state."
+  @doc """
+  Resets the ETS cache and reloads settings from the database.
+
+  **Test-only**: This function should only be called in tests to ensure
+  a clean state between test cases. Do not use in production code.
+  """
   @spec reset() :: :ok | {:error, Exception.t() | term()}
   def reset do
     GenServer.call(__MODULE__, :reset)
