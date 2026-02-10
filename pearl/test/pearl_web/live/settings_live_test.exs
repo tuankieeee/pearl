@@ -260,7 +260,7 @@ defmodule PearlWeb.SettingsLiveTest do
 
     test "handles mixed success and failure across multiple repos" do
       # Create a second repo
-      {:ok, repo2} =
+      {:ok, _repo2} =
         Repositories.create_repo(%{
           url: "https://github.com/test/reindex2",
           provider: "github",
