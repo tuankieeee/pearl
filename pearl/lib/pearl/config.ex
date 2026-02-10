@@ -117,8 +117,10 @@ defmodule Pearl.Config do
   """
   @spec ollama_host() :: String.t()
   def ollama_host do
-    env_var = Settings.get("ollama_host_env")
-    System.get_env(env_var) || "http://localhost:11434"
+    case Settings.get("ollama_host_env") do
+      nil -> "http://localhost:11434"
+      env_var -> System.get_env(env_var) || "http://localhost:11434"
+    end
   end
 
   # --- Performance ---
