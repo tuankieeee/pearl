@@ -12,7 +12,8 @@ defmodule PearlWeb.SettingsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # Build reindex_topic only when connected - no need for stable ID during static render
+    # Build reindex_topic only when connected - nil during static render is intentional.
+    # The topic is only used by handle_event/handle_info callbacks which require a connection.
     reindex_topic =
       if connected?(socket) do
         session_id = get_connect_params(socket)["_session_id"] || Ecto.UUID.generate()
@@ -540,7 +541,11 @@ defmodule PearlWeb.SettingsLive do
 
           {:error, reason} ->
             {:noreply,
-             put_flash(saved_socket, :error, "Settings saved, but failed to start re-indexing: #{inspect(reason)}")}
+             put_flash(
+               saved_socket,
+               :error,
+               "Settings saved, but failed to start re-indexing: #{inspect(reason)}"
+             )}
         end
 
       {:error, socket} ->

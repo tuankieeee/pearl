@@ -71,34 +71,43 @@ defmodule Pearl.Settings.SettingsTest do
       Settings.put("chat_model", "test-model-for-restart")
       assert Settings.get("chat_model") == "test-model-for-restart"
 
+      # Get old pid and monitor it
+      old_pid = Process.whereis(Settings)
+      ref = Process.monitor(old_pid)
+
       # Stop the GenServer
       GenServer.stop(Settings)
 
-      # Wait for supervisor to restart it
-      wait_for_process(Settings)
+      # Wait for the old process to terminate
+      assert_receive {:DOWN, ^ref, :process, ^old_pid, _reason}, 500
+
+      # Wait for supervisor to restart it using event-driven approach
+      wait_for_restart(Settings, old_pid)
 
       # Settings should still be available after restart
       assert Settings.get("chat_model") == "test-model-for-restart"
     end
   end
 
-  defp wait_for_process(name, timeout \\ 500) do
+  defp wait_for_restart(name, old_pid, timeout \\ 500) do
     deadline = System.monotonic_time(:millisecond) + timeout
-
-    wait_until_alive(name, deadline)
+    do_wait_for_restart(name, old_pid, deadline)
   end
 
-  defp wait_until_alive(name, deadline) do
+  defp do_wait_for_restart(name, old_pid, deadline) do
     case Process.whereis(name) do
-      pid when is_pid(pid) ->
-        # Verify GenServer is ready by making a synchronous call
+      pid when is_pid(pid) and pid != old_pid ->
+        # New process is registered - verify it's ready with a sync call
         :sys.get_state(pid, 100)
         :ok
 
-      nil ->
+      _ ->
         if System.monotonic_time(:millisecond) < deadline do
-          Process.sleep(5)
-          wait_until_alive(name, deadline)
+          # Use receive with short timeout for event-driven waiting
+          receive do
+          after
+            1 -> do_wait_for_restart(name, old_pid, deadline)
+          end
         else
           raise "Process #{inspect(name)} did not restart within timeout"
         end

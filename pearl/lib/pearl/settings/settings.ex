@@ -44,7 +44,7 @@ defmodule Pearl.Settings do
     "repos_path" => "~/.pearl/repos"
   }
 
-  @typedoc "Valid settings key (atom or string form)"
+  @typedoc "Valid settings key"
   @type setting_key ::
           :chat_provider
           | :chat_model
@@ -56,7 +56,6 @@ defmodule Pearl.Settings do
           | :file_read_concurrency
           | :wiki_page_timeout
           | :repos_path
-          | String.t()
 
   # --- Client API ---
 
