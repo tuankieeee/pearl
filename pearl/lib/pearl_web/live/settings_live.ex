@@ -638,7 +638,10 @@ defmodule PearlWeb.SettingsLive do
   defp reindex_repos_sequentially(repos) do
     errors =
       Enum.reduce(repos, [], fn repo, errors ->
-        task = Task.Supervisor.async_nolink(Pearl.TaskSupervisor, fn -> Pearl.Rag.index_repo(repo) end)
+        task =
+          Task.Supervisor.async_nolink(Pearl.TaskSupervisor, fn ->
+            Pearl.Rag.index_repo(repo)
+          end)
 
         try do
           case Task.yield(task, @reindex_timeout_ms) || Task.shutdown(task) do
