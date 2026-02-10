@@ -9,6 +9,19 @@ defmodule Pearl.Repositories.RepoRecord do
   alias Pearl.Wiki.WikiCache
   alias Pearl.Rag.Embedding
 
+  # Status constants for type-safe comparisons
+  @status_pending "pending"
+  @status_cloning "cloning"
+  @status_analyzing "analyzing"
+  @status_generating "generating"
+  @status_ready "ready"
+  @status_failed "failed"
+
+  @statuses [@status_pending, @status_cloning, @status_analyzing, @status_generating, @status_ready, @status_failed]
+
+  def status_ready, do: @status_ready
+  def statuses, do: @statuses
+
   @type t :: %__MODULE__{
           id: integer() | nil,
           url: String.t() | nil,
@@ -72,14 +85,7 @@ defmodule Pearl.Repositories.RepoRecord do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_inclusion(:provider, ["github", "gitlab", "bitbucket"])
-    |> validate_inclusion(:status, [
-      "pending",
-      "cloning",
-      "analyzing",
-      "generating",
-      "ready",
-      "failed"
-    ])
+    |> validate_inclusion(:status, @statuses)
     |> unique_constraint([:provider, :owner, :name, :branch])
   end
 end

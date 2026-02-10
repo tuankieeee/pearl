@@ -5,8 +5,9 @@ defmodule PearlWeb.SettingsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # Use a stable UUID for the topic - socket.id changes on reconnect
-    reindex_topic = "settings:reindex:#{Ecto.UUID.generate()}"
+    # Use session_id from connect_params - stable across WebSocket reconnects
+    session_id = get_connect_params(socket)["_session_id"] || Ecto.UUID.generate()
+    reindex_topic = "settings:reindex:#{session_id}"
 
     if connected?(socket) do
       Phoenix.PubSub.subscribe(Pearl.PubSub, reindex_topic)
@@ -611,7 +612,7 @@ defmodule PearlWeb.SettingsLive do
   def reindex_repos_task(topic) do
     repos =
       Pearl.Repositories.list_repos()
-      |> Enum.filter(&(&1.status == "ready"))
+      |> Enum.filter(&(&1.status == Pearl.Repositories.RepoRecord.status_ready()))
 
     case reindex_repos_sequentially(repos) do
       {:ok, :ok} ->

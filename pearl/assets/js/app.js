@@ -38,9 +38,11 @@ let Hooks = {
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+// Stable session ID that survives WebSocket reconnects (persists for page lifetime)
+const sessionId = crypto.randomUUID()
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
-  params: {_csrf_token: csrfToken},
+  params: {_csrf_token: csrfToken, _session_id: sessionId},
   hooks: Hooks,
 })
 
