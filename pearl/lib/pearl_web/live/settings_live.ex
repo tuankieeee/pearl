@@ -182,42 +182,40 @@ defmodule PearlWeb.SettingsLive do
                   </span>
                 </div>
 
-                <div class="space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <div class="flex items-end gap-3">
-                      <div class="form-control flex-1">
-                        <label class="label" for="openrouter_api_key_env">
-                          <span class="label-text text-sm">OpenRouter API Key Variable</span>
-                        </label>
-                        <div class="join w-full">
-                          <span class="btn btn-sm btn-disabled join-item border-base-content/20 bg-base-200 text-base-content/40 no-animation font-mono text-xs">
-                            ENV
-                          </span>
-                          <input
-                            type="text"
-                            name="settings[openrouter_api_key_env]"
-                            id="openrouter_api_key_env"
-                            value={@settings["openrouter_api_key_env"]}
-                            class="input input-bordered input-sm join-item w-full font-mono text-xs"
-                            phx-debounce="500"
-                          />
-                        </div>
-                      </div>
-                      <div class="pb-1">
-                        <span
-                          :if={@openrouter_key_set}
-                          class="badge badge-success badge-sm gap-1"
-                        >
-                          <.icon name="hero-check-circle-mini" class="size-3" /> Set
+                    <div class="form-control">
+                      <label class="label" for="openrouter_api_key_env">
+                        <span class="label-text text-sm">OpenRouter API Key Variable</span>
+                      </label>
+                      <div class="join w-full">
+                        <span class="btn btn-sm btn-disabled join-item border-base-content/20 bg-base-200 text-base-content/40 no-animation font-mono text-xs">
+                          ENV
                         </span>
-                        <span
-                          :if={!@openrouter_key_set}
-                          class="badge badge-warning badge-sm gap-1"
-                        >
-                          <.icon name="hero-exclamation-triangle-mini" class="size-3" />
-                          Not found in environment
-                        </span>
+                        <input
+                          type="text"
+                          name="settings[openrouter_api_key_env]"
+                          id="openrouter_api_key_env"
+                          value={@settings["openrouter_api_key_env"]}
+                          class="input input-bordered input-sm join-item w-full font-mono text-xs"
+                          phx-debounce="500"
+                        />
                       </div>
+                    </div>
+                    <div class="mt-2">
+                      <span
+                        :if={@openrouter_key_set}
+                        class="badge badge-success badge-sm gap-1"
+                      >
+                        <.icon name="hero-check-circle-mini" class="size-3" /> Set
+                      </span>
+                      <span
+                        :if={!@openrouter_key_set}
+                        class="badge badge-warning badge-sm gap-1"
+                      >
+                        <.icon name="hero-exclamation-triangle-mini" class="size-3" />
+                        Not found in environment
+                      </span>
                     </div>
                     <div
                       :if={@openrouter_looks_like_secret}
@@ -233,8 +231,8 @@ defmodule PearlWeb.SettingsLive do
                     </div>
                   </div>
 
-                  <div class="flex items-end gap-3">
-                    <div class="form-control flex-1">
+                  <div>
+                    <div class="form-control">
                       <label class="label" for="ollama_host_env">
                         <span class="label-text text-sm">Ollama Host Variable</span>
                       </label>
@@ -252,7 +250,7 @@ defmodule PearlWeb.SettingsLive do
                         />
                       </div>
                     </div>
-                    <div class="pb-1">
+                    <div class="mt-2">
                       <span
                         :if={@ollama_host_set}
                         class="badge badge-success badge-sm gap-1"
