@@ -234,8 +234,6 @@ defmodule PearlWeb.SettingsLiveTest do
           status: RepoRecord.status_ready()
         })
 
-      on_exit(fn -> Repositories.delete_repo(repo2) end)
-
       topic = "settings:reindex:test-mixed"
       Phoenix.PubSub.subscribe(Pearl.PubSub, topic)
 

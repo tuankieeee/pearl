@@ -443,6 +443,7 @@ defmodule PearlWeb.SettingsLive do
               <button
                 type="button"
                 phx-click="save_and_reindex"
+                phx-disable-with="Re-indexing..."
                 class="btn btn-warning w-full sm:w-auto"
               >
                 <.icon name="hero-arrow-path" class="size-4" /> Save &amp; Re-index All
@@ -450,6 +451,7 @@ defmodule PearlWeb.SettingsLive do
               <button
                 type="button"
                 phx-click="save_without_reindex"
+                phx-disable-with="Saving..."
                 class="btn btn-ghost w-full sm:w-auto"
               >
                 Save Without Re-indexing
