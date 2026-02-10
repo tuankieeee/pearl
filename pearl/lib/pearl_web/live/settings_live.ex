@@ -43,6 +43,7 @@ defmodule PearlWeb.SettingsLive do
        dirty: false,
        openrouter_key_set: env_var_set?(settings["openrouter_api_key_env"]),
        ollama_host_set: env_var_set?(settings["ollama_host_env"]),
+       openrouter_looks_like_secret: looks_like_secret?(settings["openrouter_api_key_env"]),
        resolved_path: resolved_path,
        path_exists: File.dir?(resolved_path),
        reindex_topic: reindex_topic
@@ -161,42 +162,73 @@ defmodule PearlWeb.SettingsLive do
 
               <div class="divider my-2"></div>
 
-              <%!-- Credentials --%>
+              <%!-- Environment Variables --%>
               <div>
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-base-content/40 mb-3">
-                  Provider Credentials
+                  Environment Variables
                 </h3>
-                <p class="text-xs text-base-content/40 mb-4">
-                  Pearl reads API keys from environment variables. Configure which env var names to look up.
+                <p class="text-xs text-base-content/40 mb-3">
+                  Pearl reads credentials from environment variables at runtime.
+                  These fields configure which variable names to look up — do not paste secrets here.
                 </p>
 
+                <div class="alert alert-info alert-sm mb-4 text-xs">
+                  <.icon name="hero-information-circle" class="size-4" />
+                  <span>
+                    Set credentials in your shell profile, e.g.
+                    <code class="font-mono bg-base-content/10 px-1 rounded">
+                      export OPENROUTER_API_KEY=sk-or-...
+                    </code>
+                  </span>
+                </div>
+
                 <div class="space-y-3">
-                  <div class="flex items-end gap-3">
-                    <div class="form-control flex-1">
-                      <label class="label" for="openrouter_api_key_env">
-                        <span class="label-text text-sm">OpenRouter API Key</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="settings[openrouter_api_key_env]"
-                        id="openrouter_api_key_env"
-                        value={@settings["openrouter_api_key_env"]}
-                        class="input input-bordered input-sm w-full font-mono text-xs"
-                        phx-debounce="500"
-                      />
+                  <div>
+                    <div class="flex items-end gap-3">
+                      <div class="form-control flex-1">
+                        <label class="label" for="openrouter_api_key_env">
+                          <span class="label-text text-sm">OpenRouter API Key Variable</span>
+                        </label>
+                        <div class="join w-full">
+                          <span class="btn btn-sm btn-disabled join-item border-base-content/20 bg-base-200 text-base-content/40 no-animation font-mono text-xs">
+                            ENV
+                          </span>
+                          <input
+                            type="text"
+                            name="settings[openrouter_api_key_env]"
+                            id="openrouter_api_key_env"
+                            value={@settings["openrouter_api_key_env"]}
+                            class="input input-bordered input-sm join-item w-full font-mono text-xs"
+                            phx-debounce="500"
+                          />
+                        </div>
+                      </div>
+                      <div class="pb-1">
+                        <span
+                          :if={@openrouter_key_set}
+                          class="badge badge-success badge-sm gap-1"
+                        >
+                          <.icon name="hero-check-circle-mini" class="size-3" /> Set
+                        </span>
+                        <span
+                          :if={!@openrouter_key_set}
+                          class="badge badge-warning badge-sm gap-1"
+                        >
+                          <.icon name="hero-exclamation-triangle-mini" class="size-3" />
+                          Not found in environment
+                        </span>
+                      </div>
                     </div>
-                    <div class="pb-1">
-                      <span
-                        :if={@openrouter_key_set}
-                        class="badge badge-success badge-sm gap-1"
-                      >
-                        <.icon name="hero-check-circle-mini" class="size-3" /> Set
-                      </span>
-                      <span
-                        :if={!@openrouter_key_set}
-                        class="badge badge-warning badge-sm gap-1"
-                      >
-                        <.icon name="hero-exclamation-triangle-mini" class="size-3" /> Not set
+                    <div
+                      :if={@openrouter_looks_like_secret}
+                      class="alert alert-warning alert-sm mt-2 text-xs"
+                      id="openrouter-secret-warning"
+                    >
+                      <.icon name="hero-exclamation-triangle" class="size-4" />
+                      <span>
+                        This looks like an API key. This field should contain the
+                        <strong>name</strong>
+                        of the environment variable, not the key itself.
                       </span>
                     </div>
                   </div>
@@ -204,16 +236,21 @@ defmodule PearlWeb.SettingsLive do
                   <div class="flex items-end gap-3">
                     <div class="form-control flex-1">
                       <label class="label" for="ollama_host_env">
-                        <span class="label-text text-sm">Ollama Host</span>
+                        <span class="label-text text-sm">Ollama Host Variable</span>
                       </label>
-                      <input
-                        type="text"
-                        name="settings[ollama_host_env]"
-                        id="ollama_host_env"
-                        value={@settings["ollama_host_env"]}
-                        class="input input-bordered input-sm w-full font-mono text-xs"
-                        phx-debounce="500"
-                      />
+                      <div class="join w-full">
+                        <span class="btn btn-sm btn-disabled join-item border-base-content/20 bg-base-200 text-base-content/40 no-animation font-mono text-xs">
+                          ENV
+                        </span>
+                        <input
+                          type="text"
+                          name="settings[ollama_host_env]"
+                          id="ollama_host_env"
+                          value={@settings["ollama_host_env"]}
+                          class="input input-bordered input-sm join-item w-full font-mono text-xs"
+                          phx-debounce="500"
+                        />
+                      </div>
                     </div>
                     <div class="pb-1">
                       <span
@@ -226,7 +263,8 @@ defmodule PearlWeb.SettingsLive do
                         :if={!@ollama_host_set}
                         class="badge badge-warning badge-sm gap-1"
                       >
-                        <.icon name="hero-exclamation-triangle-mini" class="size-3" /> Not set
+                        <.icon name="hero-exclamation-triangle-mini" class="size-3" />
+                        Not found in environment
                       </span>
                     </div>
                   </div>
@@ -503,6 +541,8 @@ defmodule PearlWeb.SettingsLive do
         env_var_set?(settings["ollama_host_env"])
       end
 
+    openrouter_looks_like_secret = looks_like_secret?(settings["openrouter_api_key_env"])
+
     {:noreply,
      assign(socket,
        settings: settings,
@@ -510,6 +550,7 @@ defmodule PearlWeb.SettingsLive do
        dirty: dirty,
        openrouter_key_set: openrouter_key_set,
        ollama_host_set: ollama_host_set,
+       openrouter_looks_like_secret: openrouter_looks_like_secret,
        resolved_path: resolved_path,
        path_exists: path_exists
      )}
@@ -678,6 +719,12 @@ defmodule PearlWeb.SettingsLive do
   end
 
   defp env_var_set?(_), do: false
+
+  defp looks_like_secret?(value) when is_binary(value) do
+    String.starts_with?(value, "sk-")
+  end
+
+  defp looks_like_secret?(_), do: false
 
   defp embedding_config_changed?(current, initial) do
     current["embedding_provider"] != initial["embedding_provider"] or

@@ -81,6 +81,41 @@ defmodule PearlWeb.SettingsLiveTest do
 
       assert html =~ ~r|<span[^>]*>/</span>\s*<span[^>]*>Settings</span>|
     end
+
+    test "renders Environment Variables section heading", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/settings")
+
+      assert html =~ "Environment Variables"
+    end
+
+    test "renders ENV prefix labels on credential inputs", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/settings")
+
+      assert has_element?(view, "span.join-item", "ENV")
+    end
+
+    test "shows warning when openrouter env var looks like an API key", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/settings")
+
+      html =
+        view
+        |> element("form[phx-change=validate]")
+        |> render_change(%{settings: %{openrouter_api_key_env: "sk-or-abc123"}})
+
+      assert html =~ "This looks like an API key"
+      assert html =~ "openrouter-secret-warning"
+    end
+
+    test "does not show warning for normal env var names", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/settings")
+
+      html =
+        view
+        |> element("form[phx-change=validate]")
+        |> render_change(%{settings: %{openrouter_api_key_env: "OPENROUTER_API_KEY"}})
+
+      refute html =~ "This looks like an API key"
+    end
   end
 
   describe "saving settings" do
