@@ -3,6 +3,8 @@ defmodule Pearl.Rag do
   The Rag context handles embeddings and retrieval-augmented generation.
   """
 
+  @behaviour Pearl.Rag.Behaviour
+
   require Logger
 
   import Ecto.Query

@@ -10,12 +10,17 @@ defmodule PearlWeb.SettingsLive do
 
   alias Pearl.Settings
 
+  # Configurable for testing via Mox - uses runtime config lookup
+  defp rag_module, do: Application.get_env(:pearl, :rag_module, Pearl.Rag)
+
   @impl true
   def mount(_params, _session, socket) do
     # Build reindex_topic only when connected - nil during static render is intentional.
     # The topic is only used by handle_event/handle_info callbacks which require a connection.
     reindex_topic =
       if connected?(socket) do
+        # Fallback UUID is for testing/development when _session_id isn't provided.
+        # Each mount gets a unique topic, which is acceptable for isolated test scenarios.
         session_id = get_connect_params(socket)["_session_id"] || Ecto.UUID.generate()
         topic = "settings:reindex:#{session_id}"
         Phoenix.PubSub.subscribe(Pearl.PubSub, topic)
@@ -680,7 +685,7 @@ defmodule PearlWeb.SettingsLive do
   # Task entry point for Task.Supervisor.start_child - re-indexes all ready repos
   @doc false
   @spec reindex_repos_task(String.t()) :: :ok
-  def reindex_repos_task(topic) do
+  def reindex_repos_task(topic) when is_binary(topic) do
     repos =
       Pearl.Repositories.list_repos()
       |> Enum.filter(&(&1.status == Pearl.Repositories.RepoRecord.status_ready()))
@@ -720,9 +725,11 @@ defmodule PearlWeb.SettingsLive do
           {:reindex_progress, repo.name, index, total}
         )
 
+        rag = rag_module()
+
         task =
           Task.Supervisor.async_nolink(Pearl.TaskSupervisor, fn ->
-            Pearl.Rag.index_repo(repo)
+            rag.index_repo(repo)
           end)
 
         try do

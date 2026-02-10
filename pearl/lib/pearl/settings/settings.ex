@@ -147,7 +147,7 @@ defmodule Pearl.Settings do
   Reads directly from ETS without GenServer serialization because ETS reads
   are atomic and thread-safe - no coordination needed for concurrent lookups.
   """
-  @spec get(setting_key()) :: String.t() | nil
+  @spec get(String.t() | setting_key()) :: String.t() | nil
   def get(key) when is_atom(key), do: get(Atom.to_string(key))
 
   def get(key) do

@@ -26,7 +26,7 @@ defmodule Pearl.Config do
 
   Examples: `"openai/gpt-4o-mini"`, `"llama3.2:3b"`.
   """
-  @spec chat_model() :: String.t()
+  @spec chat_model() :: String.t() | nil
   def chat_model do
     Settings.get("chat_model")
   end
@@ -42,6 +42,9 @@ defmodule Pearl.Config do
   @spec embedding_provider() :: :ollama | :openrouter
   def embedding_provider, do: parse_provider(Settings.get("embedding_provider"))
 
+  # Dialyzer notes: nil/other clauses are currently unreachable because Settings
+  # always returns defaults for known keys. Kept as defensive fallbacks.
+  @dialyzer {:nowarn_function, parse_provider: 1}
   defp parse_provider("ollama"), do: :ollama
   defp parse_provider("openrouter"), do: :openrouter
 
@@ -55,6 +58,8 @@ defmodule Pearl.Config do
     :openrouter
   end
 
+  # Dialyzer note: nil clause unreachable because Settings returns defaults.
+  @dialyzer {:nowarn_function, safe_integer: 2}
   defp safe_integer(value, default) when is_binary(value) do
     case Integer.parse(value) do
       {int, ""} when int > 0 ->
@@ -73,7 +78,7 @@ defmodule Pearl.Config do
 
   Examples: `"openai/text-embedding-3-small"`, `"nomic-embed-text"`.
   """
-  @spec embedding_model() :: String.t()
+  @spec embedding_model() :: String.t() | nil
   def embedding_model do
     Settings.get("embedding_model")
   end
@@ -86,7 +91,7 @@ defmodule Pearl.Config do
   By default this is `"OPENROUTER_API_KEY"`. Use `openrouter_api_key/0` to
   fetch the actual key value from the environment.
   """
-  @spec openrouter_api_key_env() :: String.t()
+  @spec openrouter_api_key_env() :: String.t() | nil
   def openrouter_api_key_env do
     Settings.get("openrouter_api_key_env")
   end
@@ -153,7 +158,7 @@ defmodule Pearl.Config do
 
   Defaults to `"~/.pearl/repos"` but can be configured via settings.
   """
-  @spec repos_path() :: String.t()
+  @spec repos_path() :: String.t() | nil
   def repos_path do
     Settings.get("repos_path")
   end

@@ -1,9 +1,16 @@
 defmodule PearlWeb.SettingsLiveTest do
   use PearlWeb.ConnCase
 
+  import Mox
   import Phoenix.LiveViewTest
 
+  alias Pearl.Repositories
+  alias Pearl.Repositories.RepoRecord
   alias Pearl.Settings
+
+  # Allow mock expectations from any process (for Task.Supervisor)
+  setup :set_mox_from_context
+  setup :verify_on_exit!
 
   setup do
     Settings.__reset__()
@@ -168,6 +175,86 @@ defmodule PearlWeb.SettingsLiveTest do
 
       assert html =~ "must be between 10000 and 600000"
       assert html =~ "input-error"
+    end
+  end
+
+  describe "reindex_repos_task/1" do
+    setup do
+      # Use global mode for Task.Supervisor spawned processes
+      set_mox_global()
+
+      # Create a repo with ready status
+      {:ok, repo} =
+        Repositories.create_repo(%{
+          url: "https://github.com/test/reindex",
+          provider: "github",
+          owner: "test",
+          name: "reindex",
+          status: RepoRecord.status_ready()
+        })
+
+      {:ok, repo: repo}
+    end
+
+    test "broadcasts :reindex_complete when all repos succeed", %{repo: repo} do
+      topic = "settings:reindex:test-success"
+      Phoenix.PubSub.subscribe(Pearl.PubSub, topic)
+
+      # Mock successful index_repo call (1-arity version)
+      expect(Pearl.RagMock, :index_repo, fn ^repo -> {:ok, 42} end)
+
+      assert :ok = PearlWeb.SettingsLive.reindex_repos_task(topic)
+
+      assert_receive {:reindex_progress, "reindex", 1, 1}
+      assert_receive :reindex_complete
+    end
+
+    test "broadcasts :reindex_failed with error messages when repos fail", %{repo: repo} do
+      topic = "settings:reindex:test-failure"
+      Phoenix.PubSub.subscribe(Pearl.PubSub, topic)
+
+      # Mock failed index_repo call (1-arity version)
+      expect(Pearl.RagMock, :index_repo, fn ^repo -> {:error, :embedding_failed} end)
+
+      assert :ok = PearlWeb.SettingsLive.reindex_repos_task(topic)
+
+      assert_receive {:reindex_progress, "reindex", 1, 1}
+      assert_receive {:reindex_failed, error_messages}
+      assert ["reindex: :embedding_failed"] = error_messages
+    end
+
+    test "handles mixed success and failure across multiple repos" do
+      # Create a second repo
+      {:ok, repo2} =
+        Repositories.create_repo(%{
+          url: "https://github.com/test/reindex2",
+          provider: "github",
+          owner: "test",
+          name: "reindex2",
+          status: RepoRecord.status_ready()
+        })
+
+      topic = "settings:reindex:test-mixed"
+      Phoenix.PubSub.subscribe(Pearl.PubSub, topic)
+
+      # First call succeeds, second fails (1-arity version)
+      Pearl.RagMock
+      |> expect(:index_repo, fn _repo -> {:ok, 10} end)
+      |> expect(:index_repo, fn _repo -> {:error, :connection_timeout} end)
+
+      assert :ok = PearlWeb.SettingsLive.reindex_repos_task(topic)
+
+      # Should receive progress for both repos
+      assert_receive {:reindex_progress, _, 1, 2}
+      assert_receive {:reindex_progress, _, 2, 2}
+
+      # Should broadcast failure with the error
+      assert_receive {:reindex_failed, error_messages}
+      assert length(error_messages) == 1
+      assert hd(error_messages) =~ ":connection_timeout"
+
+      # Cleanup
+      Repositories.delete_repo(repo2)
     end
   end
 end
