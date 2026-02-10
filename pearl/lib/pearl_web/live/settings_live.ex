@@ -62,7 +62,7 @@ defmodule PearlWeb.SettingsLive do
           </p>
         </div>
 
-        <.form for={@form} phx-change="validate" phx-submit="save">
+        <.form for={@form} id="settings-form" phx-change="validate" phx-submit="save">
           <%!-- Card 1: LLM Providers --%>
           <div class="card bg-base-100 shadow-md animate-fade-up" style="animation-delay: 75ms">
             <div class="card-body">
