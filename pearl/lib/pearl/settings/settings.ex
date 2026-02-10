@@ -87,6 +87,9 @@ defmodule Pearl.Settings do
 
   # --- GenServer Callbacks ---
 
+  # Uses handle_continue to defer DB loading until after init completes.
+  # This allows the supervision tree to start even if the DB is temporarily unavailable.
+  # On failure, schedules :retry_load messages every 1s until successful (see handle_info).
   @impl true
   def init([]) do
     do_init_table()
@@ -155,31 +158,31 @@ defmodule Pearl.Settings do
   def put(key, value) when is_atom(key), do: put(Atom.to_string(key), value)
 
   def put(key, value) do
-    GenServer.call(__MODULE__, {:put, key, value})
+    if valid_key?(key) do
+      GenServer.call(__MODULE__, {:put, key, value})
+    else
+      {:error, :unknown_key}
+    end
   end
 
   defp do_put(key, value) do
-    if valid_key?(key) do
-      now = DateTime.utc_now()
+    now = NaiveDateTime.utc_now()
 
-      result =
-        %Setting{}
-        |> Setting.changeset(%{key: key, value: value})
-        |> Repo.insert(
-          on_conflict: [set: [value: value, updated_at: now]],
-          conflict_target: :key
-        )
+    result =
+      %Setting{}
+      |> Setting.changeset(%{key: key, value: value})
+      |> Repo.insert(
+        on_conflict: [set: [value: value, updated_at: now]],
+        conflict_target: :key
+      )
 
-      case result do
-        {:ok, _setting} ->
-          :ets.insert(@table, {key, value})
-          :ok
+    case result do
+      {:ok, _setting} ->
+        :ets.insert(@table, {key, value})
+        :ok
 
-        {:error, changeset} ->
-          {:error, changeset}
-      end
-    else
-      {:error, :unknown_key}
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 

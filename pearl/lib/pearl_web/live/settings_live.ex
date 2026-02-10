@@ -478,7 +478,7 @@ defmodule PearlWeb.SettingsLive do
 
         # Intentionally unlinked: task failure shouldn't crash the LiveView process.
         # The task runs in the background and reports progress via PubSub to reindex_topic.
-        Task.Supervisor.async_nolink(
+        Task.Supervisor.start_child(
           Pearl.TaskSupervisor,
           fn -> __MODULE__.reindex_repos_task(reindex_topic) end
         )
@@ -529,6 +529,7 @@ defmodule PearlWeb.SettingsLive do
     {:noreply, socket}
   end
 
+  # Maps numeric setting fields to their valid {min, max} range for validation.
   @numeric_fields %{
     embedding_batch_size: {1, 500},
     file_read_concurrency: {1, 100},
@@ -645,13 +646,24 @@ defmodule PearlWeb.SettingsLive do
 
   # Process repos sequentially without transaction - LLM API calls should not hold DB locks
   # Collects all errors instead of stopping at the first one
+  # Each repo has a 5-minute timeout to prevent hanging on slow LLM calls
+  @reindex_timeout_ms :timer.minutes(5)
+
   defp reindex_repos_sequentially(repos) do
     errors =
       Enum.reduce(repos, [], fn repo, errors ->
+        task = Task.async(fn -> Pearl.Rag.index_repo(repo) end)
+
         try do
-          case Pearl.Rag.index_repo(repo) do
-            {:ok, _count} -> errors
-            {:error, reason} -> [{repo.name, inspect(reason)} | errors]
+          case Task.yield(task, @reindex_timeout_ms) || Task.shutdown(task) do
+            {:ok, {:ok, _count}} ->
+              errors
+
+            {:ok, {:error, reason}} ->
+              [{repo.name, inspect(reason)} | errors]
+
+            nil ->
+              [{repo.name, "timeout after #{div(@reindex_timeout_ms, 60_000)} minutes"} | errors]
           end
         rescue
           e -> [{repo.name, Exception.message(e)} | errors]

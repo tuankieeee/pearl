@@ -1,4 +1,5 @@
 defmodule Pearl.Settings.SettingsTest do
+  # async: false - tests share Settings state via reset() and put/get operations
   use Pearl.DataCase, async: false
 
   alias Pearl.Settings

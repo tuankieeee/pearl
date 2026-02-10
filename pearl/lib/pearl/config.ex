@@ -58,7 +58,7 @@ defmodule Pearl.Config do
         int
 
       _other ->
-        Logger.debug("Failed to parse integer from #{inspect(value)}, using default #{default}")
+        Logger.warning("Failed to parse integer from #{inspect(value)}, using default #{default}")
         default
     end
   end
