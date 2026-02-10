@@ -44,7 +44,10 @@ defmodule Pearl.Config do
 
   defp parse_provider("ollama"), do: :ollama
   defp parse_provider("openrouter"), do: :openrouter
-  defp parse_provider(nil), do: :openrouter
+  defp parse_provider(nil) do
+    Logger.warning("LLM provider not configured, defaulting to :openrouter")
+    :openrouter
+  end
 
   defp parse_provider(other) do
     Logger.warning("Unknown LLM provider #{inspect(other)}, defaulting to :openrouter")

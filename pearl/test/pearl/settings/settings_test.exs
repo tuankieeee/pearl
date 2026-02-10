@@ -5,7 +5,7 @@ defmodule Pearl.Settings.SettingsTest do
   alias Pearl.Settings
 
   setup do
-    Settings.reset()
+    Settings.__reset__()
     :ok
   end
 
@@ -75,10 +75,23 @@ defmodule Pearl.Settings.SettingsTest do
       GenServer.stop(Settings)
 
       # Wait for supervisor to restart it
-      Process.sleep(100)
+      wait_for_process(Settings)
 
       # Settings should still be available after restart
       assert Settings.get("chat_model") == "test-model-for-restart"
+    end
+  end
+
+  defp wait_for_process(name, retries \\ 50) do
+    if Process.whereis(name) do
+      :ok
+    else
+      if retries > 0 do
+        Process.sleep(10)
+        wait_for_process(name, retries - 1)
+      else
+        raise "Process #{inspect(name)} did not restart in time"
+      end
     end
   end
 end

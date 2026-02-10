@@ -12,13 +12,14 @@ defmodule PearlWeb.SettingsLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    # Use session_id from connect_params - stable across WebSocket reconnects
-    session_id = get_connect_params(socket)["_session_id"] || Ecto.UUID.generate()
-    reindex_topic = "settings:reindex:#{session_id}"
-
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(Pearl.PubSub, reindex_topic)
-    end
+    # Build reindex_topic only when connected - no need for stable ID during static render
+    reindex_topic =
+      if connected?(socket) do
+        session_id = get_connect_params(socket)["_session_id"] || Ecto.UUID.generate()
+        topic = "settings:reindex:#{session_id}"
+        Phoenix.PubSub.subscribe(Pearl.PubSub, topic)
+        topic
+      end
 
     settings = Settings.all()
 
@@ -583,17 +584,12 @@ defmodule PearlWeb.SettingsLive do
     changeset = settings_changeset(settings, :save)
 
     if changeset.valid? do
-      result =
+      settings_list =
         settings
         |> Enum.filter(fn {key, _value} -> Settings.valid_key?(key) end)
-        |> Enum.reduce_while(:ok, fn {key, value}, :ok ->
-          case Settings.put(key, value) do
-            :ok -> {:cont, :ok}
-            {:error, _} = error -> {:halt, error}
-          end
-        end)
+        |> Enum.to_list()
 
-      case result do
+      case Settings.put_all(settings_list) do
         :ok ->
           {:ok,
            socket
@@ -605,7 +601,10 @@ defmodule PearlWeb.SettingsLive do
            )
            |> put_flash(:info, "Settings saved.")}
 
-        {:error, _changeset} ->
+        {:error, _name, _changeset, _changes} ->
+          {:error, put_flash(socket, :error, "Failed to save settings.")}
+
+        {:error, :unknown_key, _key} ->
           {:error, put_flash(socket, :error, "Failed to save settings.")}
       end
     else
@@ -628,7 +627,9 @@ defmodule PearlWeb.SettingsLive do
     repos_path: :string
   }
 
-  defp settings_changeset(settings, action \\ nil) do
+  defp settings_changeset(settings), do: settings_changeset(settings, nil)
+
+  defp settings_changeset(settings, action) do
     # Convert string keys to atoms and include all settings
     data =
       for {field, _} <- @all_settings_types, into: %{} do

@@ -75,8 +75,8 @@ defmodule Pearl.Settings do
   def valid_key?(key), do: Map.has_key?(@defaults, key)
 
   @doc false
-  @spec reset() :: :ok | {:error, Exception.t() | term()}
-  def reset do
+  @spec __reset__() :: :ok | {:error, Exception.t() | term()}
+  def __reset__ do
     GenServer.call(__MODULE__, :reset)
   end
 
@@ -114,6 +114,12 @@ defmodule Pearl.Settings do
   @impl true
   def handle_call({:put, key, value}, _from, state) do
     result = do_put(key, value)
+    {:reply, result, state}
+  end
+
+  @impl true
+  def handle_call({:put_all, settings}, _from, state) do
+    result = do_put_all(settings)
     {:reply, result, state}
   end
 
@@ -165,6 +171,18 @@ defmodule Pearl.Settings do
     end
   end
 
+  @doc """
+  Save multiple settings atomically in a single transaction.
+
+  All settings are validated and saved together - either all succeed or none are saved.
+  This prevents partial state if one setting fails mid-way.
+  """
+  @spec put_all([{setting_key(), String.t()}]) ::
+          :ok | {:error, :unknown_key, String.t()} | {:error, Ecto.Multi.name(), term(), map()}
+  def put_all(settings) when is_list(settings) do
+    GenServer.call(__MODULE__, {:put_all, settings})
+  end
+
   defp do_put(key, value) do
     now = DateTime.utc_now()
 
@@ -183,6 +201,48 @@ defmodule Pearl.Settings do
 
       {:error, changeset} ->
         {:error, changeset}
+    end
+  end
+
+  defp do_put_all(settings) do
+    # Normalize keys to strings and validate
+    normalized =
+      Enum.map(settings, fn {key, value} ->
+        key_str = if is_atom(key), do: Atom.to_string(key), else: key
+        {key_str, value}
+      end)
+
+    # Check for unknown keys first
+    case Enum.find(normalized, fn {key, _} -> not valid_key?(key) end) do
+      {invalid_key, _} ->
+        {:error, :unknown_key, invalid_key}
+
+      nil ->
+        now = DateTime.utc_now()
+
+        # Build Ecto.Multi for atomic transaction
+        multi =
+          Enum.reduce(normalized, Ecto.Multi.new(), fn {key, value}, multi ->
+            changeset = Setting.changeset(%Setting{}, %{key: key, value: value})
+
+            Ecto.Multi.insert(multi, {:setting, key}, changeset,
+              on_conflict: [set: [value: value, updated_at: now]],
+              conflict_target: :key
+            )
+          end)
+
+        case Repo.transaction(multi) do
+          {:ok, _results} ->
+            # Update ETS cache only after successful transaction
+            Enum.each(normalized, fn {key, value} ->
+              :ets.insert(@table, {key, value})
+            end)
+
+            :ok
+
+          {:error, name, changeset, _changes_so_far} ->
+            {:error, name, changeset, %{}}
+        end
     end
   end
 
