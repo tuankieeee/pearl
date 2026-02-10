@@ -708,6 +708,7 @@ defmodule PearlWeb.SettingsLive do
           topic,
           {:reindex_progress, repo.name, index, total}
         )
+
         task =
           Task.Supervisor.async_nolink(Pearl.TaskSupervisor, fn ->
             Pearl.Rag.index_repo(repo)

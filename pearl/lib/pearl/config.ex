@@ -51,7 +51,6 @@ defmodule Pearl.Config do
     :openrouter
   end
 
-  @spec safe_integer(String.t() | nil, pos_integer()) :: pos_integer()
   defp safe_integer(value, default) when is_binary(value) do
     case Integer.parse(value) do
       {int, ""} when int > 0 ->
