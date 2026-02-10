@@ -82,16 +82,26 @@ defmodule Pearl.Settings.SettingsTest do
     end
   end
 
-  defp wait_for_process(name, retries \\ 50) do
-    if Process.whereis(name) do
-      :ok
-    else
-      if retries > 0 do
-        Process.sleep(10)
-        wait_for_process(name, retries - 1)
-      else
-        raise "Process #{inspect(name)} did not restart in time"
-      end
+  defp wait_for_process(name, timeout \\ 500) do
+    deadline = System.monotonic_time(:millisecond) + timeout
+
+    wait_until_alive(name, deadline)
+  end
+
+  defp wait_until_alive(name, deadline) do
+    case Process.whereis(name) do
+      pid when is_pid(pid) ->
+        # Verify GenServer is ready by making a synchronous call
+        :sys.get_state(pid, 100)
+        :ok
+
+      nil ->
+        if System.monotonic_time(:millisecond) < deadline do
+          Process.sleep(5)
+          wait_until_alive(name, deadline)
+        else
+          raise "Process #{inspect(name)} did not restart within timeout"
+        end
     end
   end
 end

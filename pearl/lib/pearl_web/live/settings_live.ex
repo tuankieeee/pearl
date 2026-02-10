@@ -530,13 +530,18 @@ defmodule PearlWeb.SettingsLive do
 
         # Intentionally unlinked: task failure shouldn't crash the LiveView process.
         # The task runs in the background and reports progress via PubSub to reindex_topic.
-        Task.Supervisor.start_child(
-          Pearl.TaskSupervisor,
-          fn -> __MODULE__.reindex_repos_task(reindex_topic) end
-        )
+        case Task.Supervisor.start_child(
+               Pearl.TaskSupervisor,
+               fn -> __MODULE__.reindex_repos_task(reindex_topic) end
+             ) do
+          {:ok, _pid} ->
+            {:noreply,
+             put_flash(saved_socket, :info, "Settings saved. Re-indexing started in background.")}
 
-        {:noreply,
-         put_flash(saved_socket, :info, "Settings saved. Re-indexing started in background.")}
+          {:error, reason} ->
+            {:noreply,
+             put_flash(saved_socket, :error, "Settings saved, but failed to start re-indexing: #{inspect(reason)}")}
+        end
 
       {:error, socket} ->
         {:noreply, socket}

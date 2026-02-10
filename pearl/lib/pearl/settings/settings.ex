@@ -264,7 +264,7 @@ defmodule Pearl.Settings do
 
       :ok
     rescue
-      e ->
+      e in [DBConnection.ConnectionError, Postgrex.Error] ->
         Logger.warning("Failed to load settings from DB: #{Exception.message(e)}")
         {:error, e}
     catch
