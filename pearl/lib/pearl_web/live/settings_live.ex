@@ -32,6 +32,7 @@ defmodule PearlWeb.SettingsLive do
        show_ask: false,
        settings: settings,
        initial_settings: settings,
+       form: to_form(settings_changeset(settings), as: :settings),
        dirty: false,
        openrouter_key_set: env_var_set?(settings["openrouter_api_key_env"]),
        ollama_host_set: env_var_set?(settings["ollama_host_env"]),
@@ -53,7 +54,7 @@ defmodule PearlWeb.SettingsLive do
           </p>
         </div>
 
-        <.form for={to_form(@settings, as: :settings)} phx-change="validate" phx-submit="save">
+        <.form for={@form} phx-change="validate" phx-submit="save">
           <%!-- Card 1: LLM Providers --%>
           <div class="card bg-base-100 shadow-md animate-fade-up" style="animation-delay: 75ms">
             <div class="card-body">
@@ -248,14 +249,28 @@ defmodule PearlWeb.SettingsLive do
                     type="number"
                     name="settings[embedding_batch_size]"
                     id="embedding_batch_size"
-                    value={@settings["embedding_batch_size"]}
+                    value={@form[:embedding_batch_size].value}
                     min="1"
                     max="500"
                     phx-debounce="300"
-                    class="input input-bordered input-sm w-full"
+                    class={[
+                      "input input-bordered input-sm w-full",
+                      @form[:embedding_batch_size].errors != [] && "input-error"
+                    ]}
                   />
                   <label class="label">
-                    <span class="label-text-alt text-base-content/30">1 – 500 chunks per batch</span>
+                    <span
+                      :if={@form[:embedding_batch_size].errors == []}
+                      class="label-text-alt text-base-content/30"
+                    >
+                      1 – 500 chunks per batch
+                    </span>
+                    <span
+                      :for={error <- @form[:embedding_batch_size].errors}
+                      class="label-text-alt text-error"
+                    >
+                      {translate_error(error)}
+                    </span>
                   </label>
                 </div>
 
@@ -267,15 +282,27 @@ defmodule PearlWeb.SettingsLive do
                     type="number"
                     name="settings[file_read_concurrency]"
                     id="file_read_concurrency"
-                    value={@settings["file_read_concurrency"]}
+                    value={@form[:file_read_concurrency].value}
                     min="1"
                     max="100"
                     phx-debounce="300"
-                    class="input input-bordered input-sm w-full"
+                    class={[
+                      "input input-bordered input-sm w-full",
+                      @form[:file_read_concurrency].errors != [] && "input-error"
+                    ]}
                   />
                   <label class="label">
-                    <span class="label-text-alt text-base-content/30">
+                    <span
+                      :if={@form[:file_read_concurrency].errors == []}
+                      class="label-text-alt text-base-content/30"
+                    >
                       1 – 100 concurrent reads
+                    </span>
+                    <span
+                      :for={error <- @form[:file_read_concurrency].errors}
+                      class="label-text-alt text-error"
+                    >
+                      {translate_error(error)}
                     </span>
                   </label>
                 </div>
@@ -289,19 +316,33 @@ defmodule PearlWeb.SettingsLive do
                       type="number"
                       name="settings[wiki_page_timeout]"
                       id="wiki_page_timeout"
-                      value={@settings["wiki_page_timeout"]}
+                      value={@form[:wiki_page_timeout].value}
                       min="10000"
                       max="600000"
                       step="1000"
                       phx-debounce="300"
-                      class="input input-bordered input-sm join-item w-full"
+                      class={[
+                        "input input-bordered input-sm join-item w-full",
+                        @form[:wiki_page_timeout].errors != [] && "input-error"
+                      ]}
                     />
                     <span class="btn btn-sm btn-disabled join-item border-base-content/20 bg-base-200 text-base-content/40 no-animation">
                       ms
                     </span>
                   </div>
                   <label class="label">
-                    <span class="label-text-alt text-base-content/30">10s – 600s per wiki page</span>
+                    <span
+                      :if={@form[:wiki_page_timeout].errors == []}
+                      class="label-text-alt text-base-content/30"
+                    >
+                      10s – 600s per wiki page
+                    </span>
+                    <span
+                      :for={error <- @form[:wiki_page_timeout].errors}
+                      class="label-text-alt text-error"
+                    >
+                      {translate_error(error)}
+                    </span>
                   </label>
                 </div>
               </div>
@@ -427,6 +468,7 @@ defmodule PearlWeb.SettingsLive do
   def handle_event("validate", %{"settings" => params}, socket) do
     settings = Map.merge(socket.assigns.settings, params)
     dirty = settings != socket.assigns.initial_settings
+    changeset = settings_changeset(settings, :validate)
 
     # Only expand path if it changed to avoid redundant work
     {resolved_path, path_exists} =
@@ -455,6 +497,7 @@ defmodule PearlWeb.SettingsLive do
     {:noreply,
      assign(socket,
        settings: settings,
+       form: to_form(changeset, as: :settings),
        dirty: dirty,
        openrouter_key_set: openrouter_key_set,
        ollama_host_set: ollama_host_set,
@@ -516,6 +559,12 @@ defmodule PearlWeb.SettingsLive do
     {:noreply, put_flash(socket, :error, error_msg)}
   end
 
+  @impl true
+  def handle_info({:reindex_progress, repo_name, current, total}, socket) do
+    msg = "Re-indexing #{repo_name} (#{current}/#{total})..."
+    {:noreply, put_flash(socket, :info, msg)}
+  end
+
   # Catch-all for unexpected messages (e.g., PubSub noise).
   # Note: start_child tasks are unlinked so no :DOWN messages are received here.
   @impl true
@@ -530,10 +579,8 @@ defmodule PearlWeb.SettingsLive do
     wiki_page_timeout: {10_000, 600_000}
   }
 
-  @numeric_types Map.new(@numeric_fields, fn {k, _} -> {k, :integer} end)
-
   defp do_save(socket, settings) do
-    changeset = validate_settings(settings)
+    changeset = settings_changeset(settings, :save)
 
     if changeset.valid? do
       result =
@@ -550,56 +597,62 @@ defmodule PearlWeb.SettingsLive do
         :ok ->
           {:ok,
            socket
-           |> assign(settings: settings, initial_settings: settings, dirty: false)
+           |> assign(
+             settings: settings,
+             initial_settings: settings,
+             form: to_form(changeset, as: :settings),
+             dirty: false
+           )
            |> put_flash(:info, "Settings saved.")}
 
         {:error, _changeset} ->
           {:error, put_flash(socket, :error, "Failed to save settings.")}
       end
     else
-      message = format_changeset_errors(changeset)
-      {:error, put_flash(socket, :error, message)}
+      # Errors are shown inline via the form, no flash needed
+      {:error, assign(socket, form: to_form(changeset, as: :settings))}
     end
   end
 
-  defp validate_settings(settings) do
-    # Only convert keys we're validating - they're defined as atoms in @numeric_fields
+  # All settings keys for the schemaless changeset
+  @all_settings_types %{
+    chat_provider: :string,
+    chat_model: :string,
+    embedding_provider: :string,
+    embedding_model: :string,
+    openrouter_api_key_env: :string,
+    ollama_host_env: :string,
+    embedding_batch_size: :integer,
+    file_read_concurrency: :integer,
+    wiki_page_timeout: :integer,
+    repos_path: :string
+  }
+
+  defp settings_changeset(settings, action \\ nil) do
+    # Convert string keys to atoms and include all settings
     data =
-      for {field, _} <- @numeric_fields, into: %{} do
+      for {field, _} <- @all_settings_types, into: %{} do
         {field, settings[to_string(field)]}
       end
 
-    {%{}, @numeric_types}
-    |> Ecto.Changeset.cast(data, Map.keys(@numeric_types))
-    |> then(fn changeset ->
-      Enum.reduce(@numeric_fields, changeset, fn {field, {min, max}}, cs ->
-        msg = "must be an integer between #{min} and #{max}"
+    changeset =
+      {%{}, @all_settings_types}
+      |> Ecto.Changeset.cast(data, Map.keys(@all_settings_types))
+      |> then(fn changeset ->
+        Enum.reduce(@numeric_fields, changeset, fn {field, {min, max}}, cs ->
+          msg = "must be between #{min} and #{max}"
 
-        cs
-        |> Ecto.Changeset.validate_required([field], message: msg)
-        |> Ecto.Changeset.validate_number(field,
-          greater_than_or_equal_to: min,
-          less_than_or_equal_to: max,
-          message: msg
-        )
+          cs
+          |> Ecto.Changeset.validate_required([field], message: msg)
+          |> Ecto.Changeset.validate_number(field,
+            greater_than_or_equal_to: min,
+            less_than_or_equal_to: max,
+            message: msg
+          )
+        end)
       end)
-    end)
-  end
 
-  defp format_changeset_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-    |> Enum.map_join("; ", fn {field, errors} ->
-      "#{format_field_name(field)} #{Enum.join(errors, ", ")}"
-    end)
-  end
-
-  defp format_field_name(field) do
-    field
-    |> to_string()
-    |> String.replace("_", " ")
-    |> String.split()
-    |> Enum.map(&String.capitalize/1)
-    |> Enum.join(" ")
+    if action, do: Map.put(changeset, :action, action), else: changeset
   end
 
   defp env_var_set?(env_var_name) when is_binary(env_var_name) do
@@ -621,7 +674,7 @@ defmodule PearlWeb.SettingsLive do
       Pearl.Repositories.list_repos()
       |> Enum.filter(&(&1.status == Pearl.Repositories.RepoRecord.status_ready()))
 
-    case reindex_repos_sequentially(repos) do
+    case reindex_repos_sequentially(repos, topic) do
       {:ok, :ok} ->
         Phoenix.PubSub.broadcast(Pearl.PubSub, topic, :reindex_complete)
 
@@ -643,9 +696,18 @@ defmodule PearlWeb.SettingsLive do
   # Each repo has a 5-minute timeout to prevent hanging on slow LLM calls
   @reindex_timeout_ms :timer.minutes(5)
 
-  defp reindex_repos_sequentially(repos) do
+  defp reindex_repos_sequentially(repos, topic) do
+    total = length(repos)
+
     errors =
-      Enum.reduce(repos, [], fn repo, errors ->
+      repos
+      |> Enum.with_index(1)
+      |> Enum.reduce([], fn {repo, index}, errors ->
+        Phoenix.PubSub.broadcast(
+          Pearl.PubSub,
+          topic,
+          {:reindex_progress, repo.name, index, total}
+        )
         task =
           Task.Supervisor.async_nolink(Pearl.TaskSupervisor, fn ->
             Pearl.Rag.index_repo(repo)

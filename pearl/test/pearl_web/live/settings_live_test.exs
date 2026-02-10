@@ -98,7 +98,7 @@ defmodule PearlWeb.SettingsLiveTest do
       assert Settings.get("chat_model") == "test/model-456"
     end
 
-    test "shows error when embedding_batch_size is below minimum", %{conn: conn} do
+    test "shows inline error when embedding_batch_size is below minimum", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/settings")
 
       html =
@@ -106,10 +106,11 @@ defmodule PearlWeb.SettingsLiveTest do
         |> form("form[phx-submit=save]", settings: %{embedding_batch_size: "0"})
         |> render_submit()
 
-      assert html =~ "Embedding Batch Size must be an integer between 1 and 500"
+      assert html =~ "must be between 1 and 500"
+      assert html =~ "input-error"
     end
 
-    test "shows error when embedding_batch_size is above maximum", %{conn: conn} do
+    test "shows inline error when embedding_batch_size is above maximum", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/settings")
 
       html =
@@ -117,10 +118,11 @@ defmodule PearlWeb.SettingsLiveTest do
         |> form("form[phx-submit=save]", settings: %{embedding_batch_size: "501"})
         |> render_submit()
 
-      assert html =~ "Embedding Batch Size must be an integer between 1 and 500"
+      assert html =~ "must be between 1 and 500"
+      assert html =~ "input-error"
     end
 
-    test "shows error when file_read_concurrency is below minimum", %{conn: conn} do
+    test "shows inline error when file_read_concurrency is below minimum", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/settings")
 
       html =
@@ -128,10 +130,11 @@ defmodule PearlWeb.SettingsLiveTest do
         |> form("form[phx-submit=save]", settings: %{file_read_concurrency: "0"})
         |> render_submit()
 
-      assert html =~ "File Read Concurrency must be an integer between 1 and 100"
+      assert html =~ "must be between 1 and 100"
+      assert html =~ "input-error"
     end
 
-    test "shows error when file_read_concurrency is above maximum", %{conn: conn} do
+    test "shows inline error when file_read_concurrency is above maximum", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/settings")
 
       html =
@@ -139,10 +142,11 @@ defmodule PearlWeb.SettingsLiveTest do
         |> form("form[phx-submit=save]", settings: %{file_read_concurrency: "101"})
         |> render_submit()
 
-      assert html =~ "File Read Concurrency must be an integer between 1 and 100"
+      assert html =~ "must be between 1 and 100"
+      assert html =~ "input-error"
     end
 
-    test "shows error when wiki_page_timeout is below minimum", %{conn: conn} do
+    test "shows inline error when wiki_page_timeout is below minimum", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/settings")
 
       html =
@@ -150,10 +154,11 @@ defmodule PearlWeb.SettingsLiveTest do
         |> form("form[phx-submit=save]", settings: %{wiki_page_timeout: "9999"})
         |> render_submit()
 
-      assert html =~ "Wiki Page Timeout must be an integer between 10000 and 600000"
+      assert html =~ "must be between 10000 and 600000"
+      assert html =~ "input-error"
     end
 
-    test "shows error when wiki_page_timeout is above maximum", %{conn: conn} do
+    test "shows inline error when wiki_page_timeout is above maximum", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/settings")
 
       html =
@@ -161,7 +166,8 @@ defmodule PearlWeb.SettingsLiveTest do
         |> form("form[phx-submit=save]", settings: %{wiki_page_timeout: "600001"})
         |> render_submit()
 
-      assert html =~ "Wiki Page Timeout must be an integer between 10000 and 600000"
+      assert html =~ "must be between 10000 and 600000"
+      assert html =~ "input-error"
     end
   end
 end
