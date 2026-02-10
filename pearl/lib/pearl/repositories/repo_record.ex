@@ -17,7 +17,14 @@ defmodule Pearl.Repositories.RepoRecord do
   @status_ready "ready"
   @status_failed "failed"
 
-  @statuses [@status_pending, @status_cloning, @status_analyzing, @status_generating, @status_ready, @status_failed]
+  @statuses [
+    @status_pending,
+    @status_cloning,
+    @status_analyzing,
+    @status_generating,
+    @status_ready,
+    @status_failed
+  ]
 
   def status_ready, do: @status_ready
   def statuses, do: @statuses

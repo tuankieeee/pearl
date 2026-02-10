@@ -1,4 +1,11 @@
 defmodule PearlWeb.SettingsLive do
+  @moduledoc """
+  LiveView for managing Pearl application settings.
+
+  Provides UI for configuring LLM providers, models, performance tuning,
+  and storage paths. Handles embedding model changes by prompting for
+  repository re-indexing.
+  """
   use PearlWeb, :live_view
 
   alias Pearl.Settings
