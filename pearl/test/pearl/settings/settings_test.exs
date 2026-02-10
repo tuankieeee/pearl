@@ -90,27 +90,31 @@ defmodule Pearl.Settings.SettingsTest do
   end
 
   defp wait_for_restart(name, old_pid, timeout \\ 500) do
+    # After :DOWN is received, supervisor restarts synchronously.
+    # Use :sys.get_state to block until the new GenServer is ready.
+    # This is event-driven: we rely on GenServer.call blocking behavior
+    # rather than polling Process.whereis in a tight loop.
     deadline = System.monotonic_time(:millisecond) + timeout
-    do_wait_for_restart(name, old_pid, deadline)
+    await_ready(name, old_pid, deadline)
   end
 
-  defp do_wait_for_restart(name, old_pid, deadline) do
+  defp await_ready(name, old_pid, deadline) do
+    remaining = deadline - System.monotonic_time(:millisecond)
+
+    if remaining <= 0 do
+      raise "Process #{inspect(name)} did not restart within timeout"
+    end
+
     case Process.whereis(name) do
       pid when is_pid(pid) and pid != old_pid ->
-        # New process is registered - verify it's ready with a sync call
-        :sys.get_state(pid, 100)
+        # New process registered - block until init/1 completes
+        :sys.get_state(pid, remaining)
         :ok
 
       _ ->
-        if System.monotonic_time(:millisecond) < deadline do
-          # Use receive with short timeout for event-driven waiting
-          receive do
-          after
-            1 -> do_wait_for_restart(name, old_pid, deadline)
-          end
-        else
-          raise "Process #{inspect(name)} did not restart within timeout"
-        end
+        # Not yet registered - yield to scheduler and retry
+        Process.sleep(1)
+        await_ready(name, old_pid, deadline)
     end
   end
 end

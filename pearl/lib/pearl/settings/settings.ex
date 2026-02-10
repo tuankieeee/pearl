@@ -158,7 +158,7 @@ defmodule Pearl.Settings do
   end
 
   @doc "Set a setting value. Writes to DB and updates ETS cache."
-  @spec put(setting_key(), String.t()) ::
+  @spec put(String.t() | setting_key(), String.t()) ::
           :ok | {:error, Ecto.Changeset.t()} | {:error, :unknown_key}
   def put(key, value) when is_atom(key), do: put(Atom.to_string(key), value)
 

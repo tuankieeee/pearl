@@ -103,7 +103,10 @@ defmodule Pearl.Config do
   """
   @spec openrouter_api_key() :: String.t() | nil
   def openrouter_api_key do
-    System.get_env(openrouter_api_key_env())
+    case openrouter_api_key_env() do
+      nil -> nil
+      env_var -> System.get_env(env_var)
+    end
   end
 
   @doc """

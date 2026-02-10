@@ -234,6 +234,8 @@ defmodule PearlWeb.SettingsLiveTest do
           status: RepoRecord.status_ready()
         })
 
+      on_exit(fn -> Repositories.delete_repo(repo2) end)
+
       topic = "settings:reindex:test-mixed"
       Phoenix.PubSub.subscribe(Pearl.PubSub, topic)
 
@@ -252,9 +254,6 @@ defmodule PearlWeb.SettingsLiveTest do
       assert_receive {:reindex_failed, error_messages}
       assert length(error_messages) == 1
       assert hd(error_messages) =~ ":connection_timeout"
-
-      # Cleanup
-      Repositories.delete_repo(repo2)
     end
   end
 end

@@ -714,6 +714,7 @@ defmodule PearlWeb.SettingsLive do
 
   defp reindex_repos_sequentially(repos, topic) do
     total = length(repos)
+    rag = rag_module()
 
     errors =
       repos
@@ -724,8 +725,6 @@ defmodule PearlWeb.SettingsLive do
           topic,
           {:reindex_progress, repo.name, index, total}
         )
-
-        rag = rag_module()
 
         task =
           Task.Supervisor.async_nolink(Pearl.TaskSupervisor, fn ->
