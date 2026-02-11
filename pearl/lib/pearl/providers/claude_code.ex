@@ -149,8 +149,47 @@ defmodule Pearl.Providers.ClaudeCode do
     end
   end
 
-  defp chat_stream(_cli_path, _args) do
-    {:error, :not_implemented}
+  defp chat_stream(cli_path, args) do
+    port = Port.open({:spawn_executable, cli_path}, [
+      :binary, :exit_status, {:args, args}, {:line, 1_048_576}
+    ])
+
+    stream =
+      Stream.resource(
+        fn -> port end,
+        &next_stream_chunk/1,
+        &close_port/1
+      )
+
+    {:ok, stream}
+  end
+
+  defp next_stream_chunk(port) do
+    receive do
+      {^port, {:data, {:eol, line}}} ->
+        case parse_json_line(line) do
+          {:text, text} -> {[text], port}
+          {:done, _result} -> {:halt, port}
+          :skip -> {[], port}
+        end
+
+      {^port, {:data, {:noeol, _partial}}} ->
+        {[], port}
+
+      {^port, {:exit_status, _}} ->
+        {:halt, port}
+    after
+      600_000 -> {:halt, port}
+    end
+  end
+
+  defp close_port(port) do
+    # Drain and close; port may already be closed from exit_status
+    try do
+      Port.close(port)
+    rescue
+      ArgumentError -> :ok
+    end
   end
 
   @impl true
