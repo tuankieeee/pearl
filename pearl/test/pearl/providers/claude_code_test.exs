@@ -94,15 +94,41 @@ defmodule Pearl.Providers.ClaudeCodeTest do
       assert {:text, "Hello world!"} = ClaudeCode.parse_json_line(line)
     end
 
-    test "returns :done for result message" do
+    test "returns :done for result message with metrics" do
       line =
         Jason.encode!(%{
           "type" => "result",
           "subtype" => "success",
-          "total_cost_usd" => 0.0042
+          "is_error" => false,
+          "session_id" => "sess-abc123",
+          "total_cost_usd" => 0.0042,
+          "duration_ms" => 1000,
+          "num_turns" => 2,
+          "usage" => %{"input_tokens" => 100, "output_tokens" => 50}
         })
 
-      assert {:done, %{"total_cost_usd" => 0.0042}} = ClaudeCode.parse_json_line(line)
+      assert {:done, result} = ClaudeCode.parse_json_line(line)
+      assert result["is_error"] == false
+      assert result["session_id"] == "sess-abc123"
+      assert result["total_cost_usd"] == 0.0042
+      assert result["duration_ms"] == 1000
+      assert result["num_turns"] == 2
+      assert result["usage"]["input_tokens"] == 100
+    end
+
+    test "returns :done with is_error true for failed result" do
+      line =
+        Jason.encode!(%{
+          "type" => "result",
+          "subtype" => "error",
+          "is_error" => true,
+          "session_id" => "sess-fail",
+          "total_cost_usd" => 0.001
+        })
+
+      assert {:done, result} = ClaudeCode.parse_json_line(line)
+      assert result["is_error"] == true
+      assert result["session_id"] == "sess-fail"
     end
 
     test "returns :skip for system messages" do

@@ -29,9 +29,15 @@ defmodule Pearl.Providers.ClaudeCode do
   @doc "Finds the claude CLI executable on the system."
   @spec find_cli() :: {:ok, String.t()} | {:error, :cli_not_found}
   def find_cli do
-    case System.find_executable("claude") do
-      nil -> {:error, :cli_not_found}
-      path -> {:ok, path}
+    case Application.get_env(:pearl, :claude_cli_path) do
+      nil ->
+        case System.find_executable("claude") do
+          nil -> {:error, :cli_not_found}
+          path -> {:ok, path}
+        end
+
+      path ->
+        {:ok, path}
     end
   end
 
@@ -66,7 +72,15 @@ defmodule Pearl.Providers.ClaudeCode do
         if text != "", do: {:text, text}, else: :skip
 
       {:ok, %{"type" => "result"} = result} ->
-        {:done, Map.take(result, ["total_cost_usd", "duration_ms", "num_turns", "usage"])}
+        {:done,
+         Map.take(result, [
+           "is_error",
+           "session_id",
+           "total_cost_usd",
+           "duration_ms",
+           "num_turns",
+           "usage"
+         ])}
 
       _ ->
         :skip
