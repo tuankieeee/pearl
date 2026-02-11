@@ -97,6 +97,9 @@ defmodule PearlWeb.SettingsLive do
                       <option value="ollama" selected={@settings["chat_provider"] == "ollama"}>
                         Ollama (Local)
                       </option>
+                      <option value="claude_code" selected={@settings["chat_provider"] == "claude_code"}>
+                        Claude Code (Local)
+                      </option>
                     </select>
                   </div>
 
@@ -113,6 +116,26 @@ defmodule PearlWeb.SettingsLive do
                       class="input input-bordered input-sm w-full font-mono text-xs"
                       phx-debounce="500"
                     />
+                  </div>
+
+                  <div class="form-control mt-3">
+                    <label class="label" for="claude_code_model">
+                      <span class="label-text text-sm">Claude Code Model</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="settings[claude_code_model]"
+                      id="claude_code_model"
+                      value={@settings["claude_code_model"]}
+                      placeholder="e.g. claude-haiku-4-5-20251001"
+                      class="input input-bordered input-sm w-full font-mono text-xs"
+                      phx-debounce="500"
+                    />
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/30">
+                        Used when Chat Provider is set to Claude Code
+                      </span>
+                    </label>
                   </div>
                 </fieldset>
 
@@ -673,6 +696,7 @@ defmodule PearlWeb.SettingsLive do
   @all_settings_types %{
     chat_provider: :string,
     chat_model: :string,
+    claude_code_model: :string,
     embedding_provider: :string,
     embedding_model: :string,
     openrouter_api_key_env: :string,

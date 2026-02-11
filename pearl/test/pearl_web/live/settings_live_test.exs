@@ -116,6 +116,24 @@ defmodule PearlWeb.SettingsLiveTest do
 
       refute html =~ "This looks like an API key"
     end
+
+    test "shows Claude Code option in chat provider dropdown", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/settings")
+      assert html =~ "Claude Code (Local)"
+      assert html =~ ~s(value="claude_code")
+    end
+
+    test "does not show Claude Code in embedding provider dropdown", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/settings")
+      embedding_select = element(view, "select[name='settings[embedding_provider]']")
+      html = render(embedding_select)
+      refute html =~ "claude_code"
+    end
+
+    test "shows claude_code_model input", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/settings")
+      assert has_element?(view, "input[name='settings[claude_code_model]']")
+    end
   end
 
   describe "saving settings" do
