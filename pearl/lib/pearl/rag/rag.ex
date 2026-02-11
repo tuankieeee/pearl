@@ -181,7 +181,7 @@ defmodule Pearl.Rag do
           }
         ] ++ history ++ [%{role: :user, content: question}]
 
-      Providers.chat(Config.chat_provider(), Config.chat_model(), messages, opts)
+      Providers.chat(Config.chat_provider(), Config.effective_chat_model(), messages, opts)
     end
   end
 

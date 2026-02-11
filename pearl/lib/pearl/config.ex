@@ -41,6 +41,20 @@ defmodule Pearl.Config do
     Settings.get("claude_code_model")
   end
 
+  @doc """
+  Returns the effective chat model based on the active chat provider.
+
+  When the provider is `:claude_code`, returns `claude_code_model/0`.
+  Otherwise returns `chat_model/0`.
+  """
+  @spec effective_chat_model() :: String.t() | nil
+  def effective_chat_model do
+    case chat_provider() do
+      :claude_code -> claude_code_model()
+      _ -> chat_model()
+    end
+  end
+
   # --- Embeddings ---
 
   @doc """

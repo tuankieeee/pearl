@@ -98,4 +98,21 @@ defmodule Pearl.ConfigTest do
       assert Config.repos_path() == "~/.pearl/repos"
     end
   end
+
+  describe "effective_chat_model/0" do
+    test "returns chat_model when provider is openrouter" do
+      assert Config.effective_chat_model() == "openai/gpt-5.2"
+    end
+
+    test "returns claude_code_model when provider is claude_code" do
+      Settings.put("chat_provider", "claude_code")
+      assert Config.effective_chat_model() == "claude-haiku-4-5-20251001"
+    end
+
+    test "returns overridden claude_code_model when provider is claude_code" do
+      Settings.put("chat_provider", "claude_code")
+      Settings.put("claude_code_model", "claude-opus-4-6")
+      assert Config.effective_chat_model() == "claude-opus-4-6"
+    end
+  end
 end
