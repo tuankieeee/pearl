@@ -31,6 +31,24 @@ defmodule Pearl.ConfigTest do
     end
   end
 
+  describe "claude_code_model/0" do
+    test "returns default model" do
+      assert Config.claude_code_model() == "claude-haiku-4-5-20251001"
+    end
+
+    test "returns overridden model" do
+      Settings.put("claude_code_model", "claude-sonnet-4-5-20250929")
+      assert Config.claude_code_model() == "claude-sonnet-4-5-20250929"
+    end
+  end
+
+  describe "chat_provider/0 with claude_code" do
+    test "returns :claude_code when configured" do
+      Settings.put("chat_provider", "claude_code")
+      assert Config.chat_provider() == :claude_code
+    end
+  end
+
   describe "embedding_provider/0" do
     test "returns default provider as atom" do
       assert Config.embedding_provider() == :openrouter
