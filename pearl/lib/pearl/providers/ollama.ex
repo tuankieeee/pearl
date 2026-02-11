@@ -15,8 +15,7 @@ defmodule Pearl.Providers.Ollama do
   """
   @spec base_url() :: String.t()
   def base_url do
-    Application.get_env(:pearl, :providers)[:ollama][:host] ||
-      "http://localhost:11434"
+    Pearl.Config.ollama_host()
   end
 
   @impl true
@@ -148,8 +147,7 @@ defmodule Pearl.Providers.Ollama do
   """
   @impl true
   def embedding_model do
-    Application.get_env(:pearl, :providers)[:ollama][:embedding_model] ||
-      "nomic-embed-text"
+    Pearl.Config.embedding_model()
   end
 
   defp finish_stream(_resp), do: :ok

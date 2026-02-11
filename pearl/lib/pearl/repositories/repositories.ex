@@ -219,7 +219,7 @@ defmodule Pearl.Repositories do
   end
 
   defp repo_path(repo) do
-    base = Application.get_env(:pearl, :storage)[:repos_path] |> Path.expand()
+    base = Pearl.Config.repos_path() |> Path.expand()
     Path.join([base, repo.provider, repo.owner, repo.name])
   end
 
@@ -283,7 +283,7 @@ defmodule Pearl.Repositories do
          {false, _} <- {info.type == :symlink, :symlink_rejected} do
       File.read(full_path)
     else
-      {_bool, reason} when is_atom(reason) -> {:error, reason}
+      {bool, reason} when is_boolean(bool) and is_atom(reason) -> {:error, reason}
       {:error, reason} -> {:error, reason}
     end
   end

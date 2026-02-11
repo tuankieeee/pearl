@@ -51,7 +51,9 @@ defmodule PearlWeb.MarkdownComponent do
       {Phoenix.HTML.raw(@html)}
       <%= for {mermaid, index} <- Enum.with_index(@mermaid_blocks) do %>
         <div id={"mermaid-#{index}"} phx-hook="Mermaid" data-mermaid={mermaid} class="my-4">
-          <pre class="mermaid"><%= mermaid %></pre>
+          <div class="flex items-center gap-2 text-base-content/50 text-sm py-4">
+            <span class="loading loading-spinner loading-xs"></span> Rendering diagram...
+          </div>
         </div>
       <% end %>
     </div>

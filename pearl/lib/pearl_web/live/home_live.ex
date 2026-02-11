@@ -201,6 +201,8 @@ defmodule PearlWeb.HomeLive do
     """
   end
 
+  # Dialyzer has a limitation analyzing MFA tuples in Task.Supervisor.start_child
+  @dialyzer {:nowarn_function, handle_event: 3}
   @impl true
   def handle_event("generate", %{"repo_url" => url}, socket) do
     case Git.parse_url(url) do
@@ -227,12 +229,7 @@ defmodule PearlWeb.HomeLive do
             {:ok, metadata_pid} =
               Task.Supervisor.start_child(
                 Pearl.TaskSupervisor,
-                fn ->
-                  case Repositories.fetch_and_save_metadata(repo) do
-                    {:ok, updated_repo} -> send(pid, {:metadata_updated, repo_id, updated_repo})
-                    _ -> :ok
-                  end
-                end,
+                {__MODULE__, :fetch_metadata_task, [pid, repo_id, repo]},
                 link: true
               )
 
@@ -242,10 +239,7 @@ defmodule PearlWeb.HomeLive do
             generation_result =
               Task.Supervisor.start_child(
                 Pearl.TaskSupervisor,
-                fn ->
-                  result = do_generate(repo, fn msg -> send(pid, {:progress, repo_id, msg}) end)
-                  send(pid, {:generation_complete, repo_id, result})
-                end,
+                {__MODULE__, :generate_wiki_task, [pid, repo_id, repo]},
                 link: true
               )
 
@@ -390,8 +384,22 @@ defmodule PearlWeb.HomeLive do
      )}
   end
 
-  # Dialyzer reports this as unreachable - false positive due to closure usage in Task.Supervisor.start_child
-  @dialyzer {:nowarn_function, do_generate: 2}
+  @doc false
+  # Task entry point for Task.Supervisor.start_child - fetches repo metadata
+  def fetch_metadata_task(pid, repo_id, repo) do
+    case Repositories.fetch_and_save_metadata(repo) do
+      {:ok, updated_repo} -> send(pid, {:metadata_updated, repo_id, updated_repo})
+      _ -> :ok
+    end
+  end
+
+  @doc false
+  # Task entry point for Task.Supervisor.start_child - generates wiki
+  def generate_wiki_task(pid, repo_id, repo) do
+    result = do_generate(repo, fn msg -> send(pid, {:progress, repo_id, msg}) end)
+    send(pid, {:generation_complete, repo_id, result})
+  end
+
   defp do_generate(%Pearl.Repositories.RepoRecord{id: repo_id} = repo, on_progress) do
     on_progress.("Cloning repository...")
 

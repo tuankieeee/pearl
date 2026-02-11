@@ -183,7 +183,7 @@ defmodule Pearl.Providers.OpenRouter do
   end
 
   defp api_key do
-    Application.get_env(:pearl, :providers)[:openrouter][:api_key]
+    Pearl.Config.openrouter_api_key()
   end
 
   @impl true

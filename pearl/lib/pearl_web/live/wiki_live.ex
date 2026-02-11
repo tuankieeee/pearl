@@ -219,23 +219,11 @@ defmodule PearlWeb.WikiLive do
     pid = self()
 
     # Linked to LiveView - terminates if user navigates away
-    case Task.Supervisor.start_child(
-           Pearl.TaskSupervisor,
-           fn ->
-             case Rag.ask(repo, question, stream: true, history: history) do
-               {:ok, stream} ->
-                 Enum.each(stream, fn chunk ->
-                   send(pid, {:answer_chunk, chunk})
-                 end)
+    # Using anonymous function wrapper instead of MFA tuple to help Dialyzer
+    # analyze types correctly (MFA tuples are opaque to Dialyzer's type inference)
+    task_fn = fn -> ask_task(pid, repo, question, history) end
 
-                 send(pid, :answer_complete)
-
-               {:error, reason} ->
-                 send(pid, {:answer_error, reason})
-             end
-           end,
-           link: true
-         ) do
+    case Task.Supervisor.start_child(Pearl.TaskSupervisor, task_fn) do
       {:ok, _pid} ->
         {:noreply, socket}
 
@@ -329,6 +317,22 @@ defmodule PearlWeb.WikiLive do
       # Unknown linked task crashed - log for debugging but don't modify UI state
       Logger.warning("Unknown linked task #{inspect(pid)} exited: #{inspect(reason)}")
       {:noreply, socket}
+    end
+  end
+
+  @doc false
+  # Task entry point for Task.Supervisor.start_child - runs RAG ask with streaming
+  def ask_task(pid, repo, question, history) do
+    case Rag.ask(repo, question, stream: true, history: history) do
+      {:ok, stream} ->
+        Enum.each(stream, fn chunk ->
+          send(pid, {:answer_chunk, chunk})
+        end)
+
+        send(pid, :answer_complete)
+
+      {:error, reason} ->
+        send(pid, {:answer_error, reason})
     end
   end
 

@@ -38,9 +38,11 @@ let Hooks = {
 }
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+// Stable session ID that survives WebSocket reconnects (persists for page lifetime)
+const sessionId = crypto.randomUUID()
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
-  params: {_csrf_token: csrfToken},
+  params: {_csrf_token: csrfToken, _session_id: sessionId},
   hooks: Hooks,
 })
 
@@ -57,6 +59,12 @@ liveSocket.connect()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
+
+// Handle show-modal events from LiveView
+window.addEventListener("phx:show-modal", (e) => {
+  const dialog = document.getElementById(e.detail.id)
+  if (dialog) dialog.showModal()
+})
 
 // The lines below enable quality of life phoenix_live_reload
 // development features:

@@ -11,19 +11,34 @@ defmodule PearlWeb.NavbarHook do
   def on_mount(:default, _params, _session, socket) do
     socket =
       socket
-      |> assign(search_results: [], search_query: "", search_form: to_form(%{"q" => ""}, as: :search))
+      |> assign(
+        search_results: [],
+        search_query: "",
+        search_form: to_form(%{"q" => ""}, as: :search)
+      )
       |> attach_hook(:navbar_search, :handle_event, &handle_event/3)
 
     {:cont, socket}
   end
 
   defp handle_event("search", %{"search" => %{"q" => ""}}, socket) do
-    {:halt, assign(socket, search_results: [], search_query: "", search_form: to_form(%{"q" => ""}, as: :search))}
+    {:halt,
+     assign(socket,
+       search_results: [],
+       search_query: "",
+       search_form: to_form(%{"q" => ""}, as: :search)
+     )}
   end
 
   defp handle_event("search", %{"search" => %{"q" => query}}, socket) do
     results = Pearl.Repositories.search(query)
-    {:halt, assign(socket, search_results: results, search_query: query, search_form: to_form(%{"q" => query}, as: :search))}
+
+    {:halt,
+     assign(socket,
+       search_results: results,
+       search_query: query,
+       search_form: to_form(%{"q" => query}, as: :search)
+     )}
   end
 
   defp handle_event(_event, _params, socket), do: {:cont, socket}
