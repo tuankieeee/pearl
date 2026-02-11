@@ -39,10 +39,13 @@ defmodule Pearl.Providers.ClaudeCode do
   @spec build_args(String.t(), String.t(), String.t() | nil) :: [String.t()]
   def build_args(model, prompt, system_prompt) do
     base = [
-      "--output-format", "stream-json",
+      "--output-format",
+      "stream-json",
       "--verbose",
-      "--model", model,
-      "--permission-mode", "bypassPermissions"
+      "--model",
+      model,
+      "--permission-mode",
+      "bypassPermissions"
     ]
 
     system = if system_prompt, do: ["--system-prompt", system_prompt], else: []
@@ -58,7 +61,7 @@ defmodule Pearl.Providers.ClaudeCode do
         text =
           blocks
           |> Enum.filter(&(&1["type"] == "text"))
-          |> Enum.map_join(&(&1["text"]))
+          |> Enum.map_join(& &1["text"])
 
         if text != "", do: {:text, text}, else: :skip
 
@@ -73,7 +76,8 @@ defmodule Pearl.Providers.ClaudeCode do
   @impl true
   def chat(model, messages, opts) do
     case find_cli() do
-      {:error, _} = err -> err
+      {:error, _} = err ->
+        err
 
       {:ok, cli_path} ->
         {system_prompt, prompt} = extract_messages(messages)
@@ -109,9 +113,13 @@ defmodule Pearl.Providers.ClaudeCode do
   end
 
   defp chat_sync(cli_path, args) do
-    port = Port.open({:spawn_executable, cli_path}, [
-      :binary, :exit_status, {:args, args}, {:line, 1_048_576}
-    ])
+    port =
+      Port.open({:spawn_executable, cli_path}, [
+        :binary,
+        :exit_status,
+        {:args, args},
+        {:line, 1_048_576}
+      ])
 
     collect_sync(port, [])
   end
@@ -135,7 +143,9 @@ defmodule Pearl.Providers.ClaudeCode do
       {^port, {:exit_status, code}} ->
         {:error, {:cli_error, code}}
     after
-      600_000 -> Port.close(port); {:error, :timeout}
+      600_000 ->
+        Port.close(port)
+        {:error, :timeout}
     end
   end
 
@@ -145,14 +155,20 @@ defmodule Pearl.Providers.ClaudeCode do
       {^port, {:exit_status, _}} -> {:ok, texts |> Enum.reverse() |> Enum.join()}
       {^port, _} -> finish_port(port, texts)
     after
-      10_000 -> Port.close(port); {:ok, texts |> Enum.reverse() |> Enum.join()}
+      10_000 ->
+        Port.close(port)
+        {:ok, texts |> Enum.reverse() |> Enum.join()}
     end
   end
 
   defp chat_stream(cli_path, args) do
-    port = Port.open({:spawn_executable, cli_path}, [
-      :binary, :exit_status, {:args, args}, {:line, 1_048_576}
-    ])
+    port =
+      Port.open({:spawn_executable, cli_path}, [
+        :binary,
+        :exit_status,
+        {:args, args},
+        {:line, 1_048_576}
+      ])
 
     stream =
       Stream.resource(

@@ -67,37 +67,40 @@ defmodule Pearl.Providers.ClaudeCodeTest do
 
   describe "parse_json_line/1" do
     test "extracts text from assistant message" do
-      line = Jason.encode!(%{
-        "type" => "assistant",
-        "message" => %{
-          "content" => [%{"type" => "text", "text" => "Hello!"}]
-        }
-      })
+      line =
+        Jason.encode!(%{
+          "type" => "assistant",
+          "message" => %{
+            "content" => [%{"type" => "text", "text" => "Hello!"}]
+          }
+        })
 
       assert {:text, "Hello!"} = ClaudeCode.parse_json_line(line)
     end
 
     test "extracts concatenated text from multiple content blocks" do
-      line = Jason.encode!(%{
-        "type" => "assistant",
-        "message" => %{
-          "content" => [
-            %{"type" => "text", "text" => "Hello "},
-            %{"type" => "tool_use", "name" => "Read", "id" => "1", "input" => %{}},
-            %{"type" => "text", "text" => "world!"}
-          ]
-        }
-      })
+      line =
+        Jason.encode!(%{
+          "type" => "assistant",
+          "message" => %{
+            "content" => [
+              %{"type" => "text", "text" => "Hello "},
+              %{"type" => "tool_use", "name" => "Read", "id" => "1", "input" => %{}},
+              %{"type" => "text", "text" => "world!"}
+            ]
+          }
+        })
 
       assert {:text, "Hello world!"} = ClaudeCode.parse_json_line(line)
     end
 
     test "returns :done for result message" do
-      line = Jason.encode!(%{
-        "type" => "result",
-        "subtype" => "success",
-        "total_cost_usd" => 0.0042
-      })
+      line =
+        Jason.encode!(%{
+          "type" => "result",
+          "subtype" => "success",
+          "total_cost_usd" => 0.0042
+        })
 
       assert {:done, %{"total_cost_usd" => 0.0042}} = ClaudeCode.parse_json_line(line)
     end
@@ -112,12 +115,13 @@ defmodule Pearl.Providers.ClaudeCodeTest do
     end
 
     test "skips assistant messages with no text content" do
-      line = Jason.encode!(%{
-        "type" => "assistant",
-        "message" => %{
-          "content" => [%{"type" => "tool_use", "name" => "Read", "id" => "1", "input" => %{}}]
-        }
-      })
+      line =
+        Jason.encode!(%{
+          "type" => "assistant",
+          "message" => %{
+            "content" => [%{"type" => "tool_use", "name" => "Read", "id" => "1", "input" => %{}}]
+          }
+        })
 
       assert :skip = ClaudeCode.parse_json_line(line)
     end
