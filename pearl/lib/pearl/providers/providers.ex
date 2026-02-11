@@ -4,11 +4,11 @@ defmodule Pearl.Providers do
   Routes calls to appropriate provider client.
   """
 
-  alias Pearl.Providers.{Ollama, OpenRouter}
+  alias Pearl.Providers.{ClaudeCode, Ollama, OpenRouter}
 
-  @type provider :: :ollama | :openrouter
+  @type provider :: :ollama | :openrouter | :claude_code
 
-  @providers %{ollama: Ollama, openrouter: OpenRouter}
+  @providers %{ollama: Ollama, openrouter: OpenRouter, claude_code: ClaudeCode}
 
   @spec chat(provider(), String.t(), [map()], keyword()) ::
           {:ok, String.t() | Enumerable.t()} | {:error, term()}

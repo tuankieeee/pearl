@@ -97,6 +97,12 @@ defmodule PearlWeb.SettingsLive do
                       <option value="ollama" selected={@settings["chat_provider"] == "ollama"}>
                         Ollama (Local)
                       </option>
+                      <option
+                        value="claude_code"
+                        selected={@settings["chat_provider"] == "claude_code"}
+                      >
+                        Claude Code (Local)
+                      </option>
                     </select>
                   </div>
 

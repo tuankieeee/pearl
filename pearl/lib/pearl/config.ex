@@ -18,7 +18,7 @@ defmodule Pearl.Config do
   Reads from the `"chat_provider"` setting. Defaults to `:openrouter` if
   not explicitly set to `"ollama"`.
   """
-  @spec chat_provider() :: :ollama | :openrouter
+  @spec chat_provider() :: :ollama | :openrouter | :claude_code
   def chat_provider, do: parse_provider(Settings.get("chat_provider"))
 
   @doc """
@@ -47,6 +47,7 @@ defmodule Pearl.Config do
   @dialyzer {:nowarn_function, parse_provider: 1}
   defp parse_provider("ollama"), do: :ollama
   defp parse_provider("openrouter"), do: :openrouter
+  defp parse_provider("claude_code"), do: :claude_code
 
   defp parse_provider(nil) do
     Logger.warning("LLM provider not configured, defaulting to :openrouter")

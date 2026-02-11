@@ -29,7 +29,7 @@ defmodule Pearl.Wiki.Generator do
 
     with {:ok, structure} <- Repositories.get_structure(repo),
          _ <- broadcast_progress.("Analyzing repository structure..."),
-         {:ok, wiki_structure} <- generate_structure(structure, provider, model),
+         {:ok, wiki_structure} <- generate_structure(structure, provider, model, cd: repo.local_path),
          _ <- broadcast_progress.("Generating #{length(wiki_structure["pages"])} pages..."),
          {:ok, pages} <-
            generate_pages(repo, structure, wiki_structure, provider, model, broadcast_progress) do
@@ -38,10 +38,10 @@ defmodule Pearl.Wiki.Generator do
     end
   end
 
-  defp generate_structure(file_tree, provider, model) do
+  defp generate_structure(file_tree, provider, model, opts) do
     messages = Prompts.structure_prompt(file_tree)
 
-    case Providers.chat(provider, model, messages, stream: false) do
+    case Providers.chat(provider, model, messages, [stream: false] ++ opts) do
       {:ok, response} -> parse_structure_response(response)
       error -> error
     end
@@ -136,7 +136,7 @@ defmodule Pearl.Wiki.Generator do
 
     messages = Prompts.page_prompt(page_spec_map, file_contents, page_type)
 
-    case Providers.chat(provider, model, messages, stream: false) do
+    case Providers.chat(provider, model, messages, stream: false, cd: repo.local_path) do
       {:ok, content} -> {:ok, content}
       error -> error
     end
