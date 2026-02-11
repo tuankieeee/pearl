@@ -25,9 +25,6 @@ defmodule Pearl.Settings.SettingsTest do
       assert Settings.get("nonexistent_key") == nil
     end
 
-    test "returns default claude_code_model" do
-      assert Settings.get("claude_code_model") == "claude-haiku-4-5-20251001"
-    end
   end
 
   describe "put/2" do
@@ -68,9 +65,6 @@ defmodule Pearl.Settings.SettingsTest do
       assert defaults["repos_path"] == "~/.pearl/repos"
     end
 
-    test "includes claude_code_model default" do
-      assert Settings.defaults()["claude_code_model"] == "claude-haiku-4-5-20251001"
-    end
   end
 
   describe "GenServer restart" do

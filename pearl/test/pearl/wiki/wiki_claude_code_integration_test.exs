@@ -27,7 +27,7 @@ defmodule Pearl.Wiki.WikiClaudeCodeIntegrationTest do
 
     # Configure Claude Code as the chat provider
     Pearl.Settings.put("chat_provider", "claude_code")
-    Pearl.Settings.put("claude_code_model", "claude-haiku-4-5-20251001")
+    Pearl.Settings.put("chat_model", "claude-haiku-4-5-20251001")
 
     # Create a temporary git repo with test files
     tmp_dir =
@@ -127,8 +127,8 @@ defmodule Pearl.Wiki.WikiClaudeCodeIntegrationTest do
       assert second_cache.model_used == "claude_code/claude-haiku-4-5-20251001"
     end
 
-    test "uses effective_chat_model from Config", %{repo: repo} do
-      Pearl.Settings.put("claude_code_model", "claude-opus-4-6")
+    test "uses chat_model from Config", %{repo: repo} do
+      Pearl.Settings.put("chat_model", "claude-opus-4-6")
 
       assert {:ok, wiki_data} = Wiki.generate(repo)
 

@@ -19,7 +19,7 @@ defmodule Pearl.Wiki do
           {:ok, map()} | {:error, term()}
   def generate(repo, on_progress \\ fn _ -> :ok end) do
     provider = Config.chat_provider()
-    model = Config.effective_chat_model()
+    model = Config.chat_model()
 
     case Generator.generate(repo, provider, model, on_progress) do
       {:ok, wiki_data} ->

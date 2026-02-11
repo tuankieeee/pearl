@@ -130,10 +130,6 @@ defmodule PearlWeb.SettingsLiveTest do
       refute html =~ "claude_code"
     end
 
-    test "shows claude_code_model input", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/settings")
-      assert has_element?(view, "input[name='settings[claude_code_model]']")
-    end
   end
 
   describe "saving settings" do

@@ -19,7 +19,6 @@ defmodule Pearl.Settings do
   | `file_read_concurrency` | `"10"` | Concurrent file reads during indexing |
   | `wiki_page_timeout` | `"300000"` | Timeout in ms for wiki page generation |
   | `repos_path` | `"~/.pearl/repos"` | Directory path for cloned repositories |
-  | `claude_code_model` | `"claude-haiku-4-5-20251001"` | Model identifier for Claude Code CLI provider |
   """
 
   use GenServer
@@ -39,7 +38,6 @@ defmodule Pearl.Settings do
     "embedding_model" => "openai/text-embedding-3-small",
     "openrouter_api_key_env" => "OPENROUTER_API_KEY",
     "ollama_host_env" => "OLLAMA_HOST",
-    "claude_code_model" => "claude-haiku-4-5-20251001",
     "embedding_batch_size" => "100",
     "file_read_concurrency" => "10",
     "wiki_page_timeout" => "300000",
@@ -54,7 +52,6 @@ defmodule Pearl.Settings do
           | :embedding_model
           | :openrouter_api_key_env
           | :ollama_host_env
-          | :claude_code_model
           | :embedding_batch_size
           | :file_read_concurrency
           | :wiki_page_timeout

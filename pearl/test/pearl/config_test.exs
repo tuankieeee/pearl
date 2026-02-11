@@ -31,17 +31,6 @@ defmodule Pearl.ConfigTest do
     end
   end
 
-  describe "claude_code_model/0" do
-    test "returns default model" do
-      assert Config.claude_code_model() == "claude-haiku-4-5-20251001"
-    end
-
-    test "returns overridden model" do
-      Settings.put("claude_code_model", "claude-sonnet-4-5-20250929")
-      assert Config.claude_code_model() == "claude-sonnet-4-5-20250929"
-    end
-  end
-
   describe "chat_provider/0 with claude_code" do
     test "returns :claude_code when configured" do
       Settings.put("chat_provider", "claude_code")
@@ -99,20 +88,4 @@ defmodule Pearl.ConfigTest do
     end
   end
 
-  describe "effective_chat_model/0" do
-    test "returns chat_model when provider is openrouter" do
-      assert Config.effective_chat_model() == "openai/gpt-5.2"
-    end
-
-    test "returns claude_code_model when provider is claude_code" do
-      Settings.put("chat_provider", "claude_code")
-      assert Config.effective_chat_model() == "claude-haiku-4-5-20251001"
-    end
-
-    test "returns overridden claude_code_model when provider is claude_code" do
-      Settings.put("chat_provider", "claude_code")
-      Settings.put("claude_code_model", "claude-opus-4-6")
-      assert Config.effective_chat_model() == "claude-opus-4-6"
-    end
-  end
 end

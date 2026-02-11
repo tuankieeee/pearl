@@ -139,14 +139,14 @@ defmodule Pearl.Providers.ClaudeCodeIntegrationTest do
   end
 
   describe "Config-driven model routing through provider" do
-    test "effective_chat_model selects claude_code_model when provider is claude_code" do
+    test "chat_model is used with claude_code provider" do
       Pearl.Settings.put("chat_provider", "claude_code")
-      Pearl.Settings.put("claude_code_model", "claude-sonnet-4-5-20250929")
+      Pearl.Settings.put("chat_model", "claude-sonnet-4-5-20250929")
       Application.put_env(:pearl, :claude_cli_path, @fake_cli)
 
       # Verify config routing
       assert Pearl.Config.chat_provider() == :claude_code
-      assert Pearl.Config.effective_chat_model() == "claude-sonnet-4-5-20250929"
+      assert Pearl.Config.chat_model() == "claude-sonnet-4-5-20250929"
 
       # Verify the full chain works: Config → Providers → ClaudeCode → response
       messages = [%{role: :user, content: "Hello"}]
@@ -154,22 +154,13 @@ defmodule Pearl.Providers.ClaudeCodeIntegrationTest do
       assert {:ok, response} =
                Providers.chat(
                  Pearl.Config.chat_provider(),
-                 Pearl.Config.effective_chat_model(),
+                 Pearl.Config.chat_model(),
                  messages,
                  stream: false
                )
 
       assert is_binary(response)
       assert response != ""
-    end
-
-    test "effective_chat_model falls back to chat_model for non-claude_code providers" do
-      Pearl.Settings.put("chat_provider", "openrouter")
-      Pearl.Settings.put("chat_model", "openai/gpt-4o-mini")
-      Pearl.Settings.put("claude_code_model", "claude-sonnet-4-5-20250929")
-
-      assert Pearl.Config.chat_provider() == :openrouter
-      assert Pearl.Config.effective_chat_model() == "openai/gpt-4o-mini"
     end
   end
 
