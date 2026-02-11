@@ -40,4 +40,86 @@ defmodule Pearl.Providers.ClaudeCodeTest do
       assert "claude-opus-4-6" in ids
     end
   end
+
+  describe "build_args/3" do
+    test "builds correct CLI arguments for non-streaming" do
+      args = ClaudeCode.build_args("claude-haiku-4-5-20251001", "Hello world", nil)
+
+      assert "--output-format" in args
+      assert "stream-json" in args
+      assert "--verbose" in args
+      assert "--model" in args
+      assert "claude-haiku-4-5-20251001" in args
+      assert "--permission-mode" in args
+      assert "bypassPermissions" in args
+      assert "--print" in args
+      assert "--" in args
+      assert "Hello world" in args
+    end
+
+    test "includes system prompt flag when system message provided" do
+      args = ClaudeCode.build_args("claude-haiku-4-5-20251001", "Hello", "You are helpful")
+
+      assert "--system-prompt" in args
+      assert "You are helpful" in args
+    end
+  end
+
+  describe "parse_json_line/1" do
+    test "extracts text from assistant message" do
+      line = Jason.encode!(%{
+        "type" => "assistant",
+        "message" => %{
+          "content" => [%{"type" => "text", "text" => "Hello!"}]
+        }
+      })
+
+      assert {:text, "Hello!"} = ClaudeCode.parse_json_line(line)
+    end
+
+    test "extracts concatenated text from multiple content blocks" do
+      line = Jason.encode!(%{
+        "type" => "assistant",
+        "message" => %{
+          "content" => [
+            %{"type" => "text", "text" => "Hello "},
+            %{"type" => "tool_use", "name" => "Read", "id" => "1", "input" => %{}},
+            %{"type" => "text", "text" => "world!"}
+          ]
+        }
+      })
+
+      assert {:text, "Hello world!"} = ClaudeCode.parse_json_line(line)
+    end
+
+    test "returns :done for result message" do
+      line = Jason.encode!(%{
+        "type" => "result",
+        "subtype" => "success",
+        "total_cost_usd" => 0.0042
+      })
+
+      assert {:done, %{"total_cost_usd" => 0.0042}} = ClaudeCode.parse_json_line(line)
+    end
+
+    test "returns :skip for system messages" do
+      line = Jason.encode!(%{"type" => "system", "subtype" => "init"})
+      assert :skip = ClaudeCode.parse_json_line(line)
+    end
+
+    test "returns :skip for unparseable lines" do
+      assert :skip = ClaudeCode.parse_json_line("not json")
+    end
+
+    test "skips assistant messages with no text content" do
+      line = Jason.encode!(%{
+        "type" => "assistant",
+        "message" => %{
+          "content" => [%{"type" => "tool_use", "name" => "Read", "id" => "1", "input" => %{}}]
+        }
+      })
+
+      assert :skip = ClaudeCode.parse_json_line(line)
+    end
+  end
 end
