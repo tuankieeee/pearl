@@ -96,10 +96,11 @@ defmodule Pearl.Providers.ClaudeCode do
       {:ok, cli_path} ->
         {system_prompt, prompt} = extract_messages(messages)
         args = build_args(model, prompt, system_prompt)
+        cd = Keyword.get(opts, :cd)
 
         case Keyword.get(opts, :stream, false) do
-          false -> chat_sync(cli_path, args)
-          true -> chat_stream(cli_path, args)
+          false -> chat_sync(cli_path, args, cd)
+          true -> chat_stream(cli_path, args, cd)
         end
     end
   end
@@ -126,15 +127,27 @@ defmodule Pearl.Providers.ClaudeCode do
     {system_prompt, user_prompt}
   end
 
-  defp chat_sync(cli_path, args) do
-    port =
-      Port.open({:spawn_executable, cli_path}, [
-        :binary,
-        :exit_status,
-        {:args, args},
-        {:line, 1_048_576}
-      ])
+  # Opens the Claude CLI as an Erlang Port with stdin closed.
+  #
+  # The Claude CLI blocks when stdin is a pipe (as created by spawn_executable).
+  # We work around this by wrapping through /bin/sh with `< /dev/null` to close
+  # stdin, while preserving safe argument passing via sh's positional parameters.
+  @spec open_cli_port(String.t(), [String.t()], String.t() | nil) :: port()
+  defp open_cli_port(cli_path, args, cd) do
+    port_opts = [
+      :binary,
+      :exit_status,
+      {:args, ["-c", ~S(exec "$0" "$@" < /dev/null), cli_path | args]},
+      {:line, 1_048_576}
+    ]
 
+    port_opts = if cd, do: [{:cd, cd} | port_opts], else: port_opts
+
+    Port.open({:spawn_executable, "/bin/sh"}, port_opts)
+  end
+
+  defp chat_sync(cli_path, args, cd) do
+    port = open_cli_port(cli_path, args, cd)
     collect_sync(port, [])
   end
 
@@ -175,14 +188,8 @@ defmodule Pearl.Providers.ClaudeCode do
     end
   end
 
-  defp chat_stream(cli_path, args) do
-    port =
-      Port.open({:spawn_executable, cli_path}, [
-        :binary,
-        :exit_status,
-        {:args, args},
-        {:line, 1_048_576}
-      ])
+  defp chat_stream(cli_path, args, cd) do
+    port = open_cli_port(cli_path, args, cd)
 
     stream =
       Stream.resource(

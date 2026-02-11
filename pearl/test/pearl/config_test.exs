@@ -87,5 +87,4 @@ defmodule Pearl.ConfigTest do
       assert Config.repos_path() == "~/.pearl/repos"
     end
   end
-
 end

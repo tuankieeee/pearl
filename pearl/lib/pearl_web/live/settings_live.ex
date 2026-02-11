@@ -120,7 +120,6 @@ defmodule PearlWeb.SettingsLive do
                       phx-debounce="500"
                     />
                   </div>
-
                 </fieldset>
 
                 <%!-- Embeddings --%>

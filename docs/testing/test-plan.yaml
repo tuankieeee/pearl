@@ -1,0 +1,172 @@
+version: 1
+metadata:
+  branch: feat/claude-code-provider
+  base: main
+  generated: "2026-02-10T00:00:00Z"
+  changes_summary: |
+    Adds Claude Code (Local) as a new LLM chat provider option in Pearl.
+    - New provider module (Pearl.Providers.ClaudeCode) spawns `claude` CLI via Erlang Port
+    - Settings UI updated with "Claude Code (Local)" in chat provider dropdown
+    - Config module routes "claude_code" provider string to :claude_code atom
+    - Provider router registers :claude_code → ClaudeCode module
+
+    Test focus: Set Claude Code as provider in settings UI, then use the Ask
+    panel on an existing wiki to send a chat message through the new provider.
+
+setup:
+  stack:
+    - type: elixir
+      package_manager: mix
+  commands:
+    - docker compose up -d
+    - "cd pearl && mix setup"
+    - "cd pearl && mix phx.server"
+  health_checks:
+    - url: http://localhost:4000
+      timeout: 30
+
+tests:
+  - id: TC-01
+    name: Select Claude Code provider and save settings
+    context: |
+      The settings_live.ex was updated to include "Claude Code (Local)" as an
+      option in the chat provider dropdown (value="claude_code", id="chat_provider").
+      The config.ex parses "claude_code" into :claude_code atom. This test sets
+      Claude Code as the active chat provider and saves.
+    steps:
+      - run: agent-browser open http://localhost:4000/settings
+      - run: agent-browser wait --load networkidle
+      - run: agent-browser snapshot -i
+        note: Capture the settings form - look for chat_provider select and chat_model input
+      - run: agent-browser select @chat_provider "claude_code"
+        note: Select "Claude Code (Local)" from the Chat/Generation provider dropdown (id=chat_provider)
+      - run: agent-browser fill @chat_model "claude-sonnet-4-5-20250929"
+        note: Set the model to Claude Sonnet 4.5 (id=chat_model)
+      - run: agent-browser snapshot -i
+        note: Verify "You have unsaved changes" warning appears and Save button is enabled
+      - run: agent-browser screenshot evidence/tc-01a-before-save.png
+      - run: agent-browser click @save_button
+        note: Click the "Save Settings" submit button
+      - run: agent-browser wait --load networkidle
+      - run: agent-browser snapshot -i
+        note: Check for "Settings saved." flash message and save button disabled
+      - run: agent-browser screenshot evidence/tc-01b-after-save.png
+    expected: |
+      1. Settings page loads with the LLM Providers card showing Chat/Generation and Embeddings sections
+      2. Chat provider dropdown contains three options: OpenRouter, Ollama (Local), Claude Code (Local)
+      3. Selecting "Claude Code (Local)" updates the dropdown value
+      4. Setting the model populates the text input
+      5. "You have unsaved changes." warning appears below the form
+      6. Save Settings button becomes enabled (no longer disabled)
+      7. After clicking Save, a "Settings saved." success flash appears
+      8. Save button becomes disabled again (form is clean)
+      9. Claude Code is NOT present in the Embeddings provider dropdown
+    evidence:
+      screenshot: evidence/tc-01b-after-save.png
+
+  - id: TC-02
+    name: Verify Claude Code settings persist after page reload
+    context: |
+      After saving in TC-01, reload the settings page to confirm the selection
+      persists through the Settings GenServer → DB → LiveView mount cycle.
+    steps:
+      - run: agent-browser open http://localhost:4000/settings
+      - run: agent-browser wait --load networkidle
+      - run: agent-browser snapshot -i
+        note: Verify chat_provider shows "Claude Code (Local)" and chat_model shows the saved model
+      - run: agent-browser screenshot evidence/tc-02-persisted.png
+    expected: |
+      1. Chat provider dropdown shows "Claude Code (Local)" as the selected option
+      2. Chat model input shows "claude-sonnet-4-5-20250929"
+      3. Save button is disabled (no unsaved changes)
+    evidence:
+      screenshot: evidence/tc-02-persisted.png
+
+  - id: TC-03
+    name: Navigate to existing wiki and open Ask panel
+    context: |
+      wiki_live.ex mounts at /wiki/:id. The ask panel is toggled via a button
+      in the navbar that fires "toggle_ask". The panel slides in from the right
+      with an input (id="ask-input") and submit button. A wiki must already
+      exist in the database for this test.
+    steps:
+      - run: agent-browser open http://localhost:4000
+      - run: agent-browser wait --load networkidle
+      - run: agent-browser snapshot -i
+        note: Capture home page - look for wiki links to /wiki/:id
+      - run: agent-browser screenshot evidence/tc-03a-home.png
+      - run: agent-browser click @wiki_link
+        note: Click the first available wiki link (e.g., "View Wiki" or repo name link)
+      - run: agent-browser wait --url "**/wiki/**"
+      - run: agent-browser wait --load networkidle
+      - run: agent-browser snapshot -i
+        note: Capture wiki page with sidebar navigation and content area
+      - run: agent-browser screenshot evidence/tc-03b-wiki-loaded.png
+      - run: agent-browser click @ask_button
+        note: Click the Ask button in the navbar to toggle the ask panel open
+      - run: agent-browser snapshot -i
+        note: Verify ask panel is open with "Ask about the codebase" header, input field, and send button
+      - run: agent-browser screenshot evidence/tc-03c-ask-panel.png
+    expected: |
+      1. Home page shows at least one repository with a link to its wiki
+      2. Clicking the wiki link navigates to /wiki/:id
+      3. Wiki page renders with a sidebar listing page titles and main content area
+      4. Wiki content is displayed (not "No wiki generated yet" placeholder)
+      5. Ask button is visible in the navbar
+      6. Clicking Ask opens the slide-over panel on the right
+      7. Panel header reads "Ask about the codebase"
+      8. Empty state shows "Ask anything about the codebase" placeholder
+      9. Text input (id="ask-input") and send button (paper airplane icon) are visible and enabled
+    evidence:
+      screenshot: evidence/tc-03c-ask-panel.png
+
+  - id: TC-04
+    name: Send a test chat message and receive streamed response
+    context: |
+      With Claude Code set as chat provider (TC-01) and the ask panel open
+      (TC-03), submit a question. wiki_live.ex handles the "ask" event by
+      spawning a Task that calls Rag.ask(repo, question, stream: true).
+      The RAG pipeline embeds the question, finds similar chunks via pgvector,
+      then calls Providers.chat(:claude_code, model, messages) which spawns
+      the claude CLI. Chunks stream back as {:answer_chunk, text} messages.
+    steps:
+      - run: agent-browser open http://localhost:4000
+      - run: agent-browser wait --load networkidle
+      - run: agent-browser snapshot -i
+      - run: agent-browser click @wiki_link
+        note: Navigate to the wiki
+      - run: agent-browser wait --url "**/wiki/**"
+      - run: agent-browser wait --load networkidle
+      - run: agent-browser snapshot -i
+      - run: agent-browser click @ask_button
+        note: Open ask panel
+      - run: agent-browser snapshot -i
+        note: Get refs for ask-input and submit button
+      - run: agent-browser fill @ask-input "What is this project about?"
+        note: Type question into the input (id=ask-input)
+      - run: agent-browser click @submit_button
+        note: Click the send button (circle button with paper airplane icon)
+      - run: agent-browser wait --text "What is this project about?"
+        note: Wait for user message to appear in the chat as a chat bubble
+      - run: agent-browser screenshot evidence/tc-04a-question-sent.png
+        note: Capture the state with user message visible and loading indicator
+      - run: agent-browser wait --load networkidle
+        timeout: 120000
+        note: Wait for streaming response to complete (Claude Code CLI may take time)
+      - run: agent-browser snapshot -i
+        note: Capture the completed assistant response
+      - run: agent-browser screenshot evidence/tc-04b-answer-received.png
+    expected: |
+      1. User message "What is this project about?" appears as a right-aligned chat bubble (chat-end)
+      2. A loading dots spinner appears in the assistant message area while waiting
+      3. The input field and send button are disabled during loading
+      4. An assistant response streams in on the left side with a primary-accented border
+      5. The response contains relevant content about the codebase/repository
+      6. After completion, the input field is re-enabled and auto-focused
+      7. The send button shows the paper airplane icon again (not spinner)
+
+      If the `claude` CLI is not installed/available:
+      - An error message appears in the assistant area (e.g., "Error: :cli_not_found")
+      - The input field is re-enabled after the error
+    evidence:
+      screenshot: evidence/tc-04b-answer-received.png

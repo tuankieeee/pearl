@@ -129,7 +129,6 @@ defmodule PearlWeb.SettingsLiveTest do
       html = render(embedding_select)
       refute html =~ "claude_code"
     end
-
   end
 
   describe "saving settings" do

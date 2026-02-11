@@ -24,7 +24,6 @@ defmodule Pearl.Settings.SettingsTest do
     test "returns nil for unknown key" do
       assert Settings.get("nonexistent_key") == nil
     end
-
   end
 
   describe "put/2" do
@@ -64,7 +63,6 @@ defmodule Pearl.Settings.SettingsTest do
       assert defaults["embedding_model"] == "openai/text-embedding-3-small"
       assert defaults["repos_path"] == "~/.pearl/repos"
     end
-
   end
 
   describe "GenServer restart" do

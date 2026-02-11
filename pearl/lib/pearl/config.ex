@@ -31,7 +31,6 @@ defmodule Pearl.Config do
     Settings.get("chat_model")
   end
 
-
   # --- Embeddings ---
 
   @doc """
